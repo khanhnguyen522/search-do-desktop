@@ -1,0 +1,17 @@
+[
+  {
+    "id": "leetcode",
+    "name": "LeetCode Practice",
+    "keywords": ["leetcode", "leet", "algo", "lc"],
+    "url": "https://leetcode.com/problemset/all/",
+    "durationMinutes": 0.1
+  },
+  {
+    "id": "conan-vpn",
+    "name": "Watch Conan (VPN)",
+    "keywords": ["conan"],
+    "openApp": "VPN – Super Unlimited Proxy",
+    "delayAfterOpenMs": 20000,
+    "url": "https://www.youtube.com/watch?v=YXbsFczzaQs&list=PLv1IX6YbPa19RFOI8OzNyJ_De5XG-GgIB&index=52"
+  }
+]
