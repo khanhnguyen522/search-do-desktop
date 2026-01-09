@@ -1,14 +1,22 @@
 {
   "identifier": "desktop-capability",
-  "platforms": [
-    "macOS",
-    "windows",
-    "linux"
-  ],
-  "windows": [
-    "main"
-  ],
+  "platforms": ["macOS", "windows", "linux"],
+  "windows": ["main", "launcher"],
   "permissions": [
-    "global-shortcut:default"
+    "core:default",
+    "opener:default",
+    "fs:default",
+    "notification:default",
+    "global-shortcut:default",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "open",
+          "cmd": "open",
+          "args": true
+        }
+      ]
+    }
   ]
 }

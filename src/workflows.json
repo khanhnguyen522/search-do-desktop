@@ -10,8 +10,8 @@
     "id": "conan-vpn",
     "name": "Watch Conan (VPN)",
     "keywords": ["conan"],
-    "openApp": "VPN – Super Unlimited Proxy",
-    "delayAfterOpenMs": 20000,
+    "openApp": "NordVPN",
+    "delayAfterOpenMs": 4000,
     "url": "https://www.youtube.com/watch?v=YXbsFczzaQs&list=PLv1IX6YbPa19RFOI8OzNyJ_De5XG-GgIB&index=52"
   }
 ]
