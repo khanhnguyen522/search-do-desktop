@@ -1,7 +1,26 @@
-# Tauri + React + Typescript
+# Search-Do (Desktop)
+## Description
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+This app allows users to type a keyword and immediately execute a predefined action, such as opening a website in the default browser.
 
-## Recommended IDE Setup
+The goal is to reduce friction for frequently repeated routines.
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+## Tech Stack
+
+- Tauri (v2)
+- React
+- TypeScript
+- Vite
+
+## Running Locally
+
+### Requirements
+- Node.js 20 LTS
+- Rust
+
+### Setup
+```bash
+git clone https://github.com/<your-username>/search-do-desktop.git
+cd search-do-desktop
+npm install
+npm run tauri dev
