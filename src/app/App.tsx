@@ -139,13 +139,14 @@ export default function App() {
           }
         />
       </Header>
-
-      <BodyRenderer
-        uiState={uiState}
-        items={results}
-        onSelect={(i) => dispatch({ type: "SET_SELECTION", index: i })}
-        onRun={(i) => runSelectedIndex(i)}
-      />
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+        <BodyRenderer
+          uiState={uiState}
+          items={results}
+          onSelect={(i) => dispatch({ type: "SET_SELECTION", index: i })}
+          onRun={(i) => runSelectedIndex(i)}
+        />
+      </div>
 
       <FooterHints />
     </LauncherShell>
