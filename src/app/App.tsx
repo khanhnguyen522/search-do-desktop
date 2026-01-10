@@ -1,4 +1,4 @@
-import { useMemo, useReducer, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import workflowsData from "../workflows.json";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -13,6 +13,7 @@ import { FooterHints } from "../ui/FooterHints";
 
 import type { Workflow } from "./engine";
 import { initialState, reducer } from "./engine";
+import type { Section } from "../flows/search/SearchResults";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -27,21 +28,21 @@ export default function App() {
   const workflows: Workflow[] = workflowsData as Workflow[];
 
   const [uiState, dispatch] = useReducer(reducer, initialState);
-
   const [query, setQuery] = useState("");
+
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const normalized = query.trim().toLowerCase();
-  const kind = query.trim().startsWith("/") ? "command" : "filter";
+  const kind: "command" | "filter" = query.trim().startsWith("/")
+    ? "command"
+    : "filter";
 
-  // báo engine biết kind để reset selection
-  useMemo(() => {
+  // Inform engine that kind changed => reset selection
+  useEffect(() => {
     dispatch({ type: "QUERY_KIND_CHANGED", kind });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind]);
 
-  const results = useMemo(() => {
-    // Filter theo kind:
+  const filtered = useMemo(() => {
     const base =
       kind === "command"
         ? workflows.filter((w) => w.type === "command")
@@ -71,9 +72,31 @@ export default function App() {
       .map((x) => x.w);
   }, [normalized, workflows, kind]);
 
+  const sections: Section[] = useMemo(() => {
+    const commands = filtered.filter((x) => x.type === "command");
+    const actions = filtered.filter((x) => x.type === "action");
+
+    if (kind === "command") {
+      return [{ title: "Commands", items: commands }];
+    }
+
+    return [
+      { title: "Commands", items: commands },
+      { title: "Actions", items: actions },
+    ];
+  }, [filtered, kind]);
+
+  const flat: Workflow[] = useMemo(() => {
+    const out: Workflow[] = [];
+    for (const s of sections) out.push(...s.items);
+    return out;
+  }, [sections]);
+
+  const totalItems = flat.length;
+
   const safeSelectedIndex = Math.min(
     uiState.selectedIndex,
-    Math.max(0, results.length - 1)
+    Math.max(0, totalItems - 1)
   );
 
   async function hideLauncher() {
@@ -93,8 +116,8 @@ export default function App() {
     await hideLauncher();
   }
 
-  async function runSelectedIndex(index: number) {
-    const w = results[index];
+  async function runByIndex(globalIndex: number) {
+    const w = flat[globalIndex];
     if (!w) return;
 
     if (w.type === "command") {
@@ -106,49 +129,81 @@ export default function App() {
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "ArrowDown") {
+    const isCmdL = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "l";
+    const isCmdK = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k";
+
+    if (isCmdL) {
       e.preventDefault();
-      dispatch({ type: "MOVE_SELECTION", delta: 1, max: results.length });
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      dispatch({ type: "MOVE_SELECTION", delta: -1, max: results.length });
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      runSelectedIndex(safeSelectedIndex);
-    } else if (e.key === "Escape") {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+      return;
+    }
+
+    if (isCmdK) {
       e.preventDefault();
       setQuery("");
-      dispatch({ type: "GO_VIEW", view: "search" });
+      dispatch({ type: "SET_SELECTION", index: 0 });
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      dispatch({ type: "MOVE_SELECTION", delta: 1, max: totalItems });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      dispatch({ type: "MOVE_SELECTION", delta: -1, max: totalItems });
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      runByIndex(safeSelectedIndex);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      // ✅ Day3: hide only, do NOT reset query/selection
       hideLauncher();
     }
   }
 
   return (
     <LauncherShell>
-      <Header>
-        <AppTitle modeTitle={uiState.practice.modeTitle} />
-        <SearchBar
-          inputRef={searchInputRef}
-          value={query}
-          onChange={(text) => setQuery(text)}
-          onKeyDown={onKeyDown}
-          placeholder={
-            kind === "command"
-              ? "Type /lc, /today, /search..."
-              : 'Type keyword (e.g. "leetcode")'
-          }
-        />
-      </Header>
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
-        <BodyRenderer
-          uiState={uiState}
-          items={results}
-          onSelect={(i) => dispatch({ type: "SET_SELECTION", index: i })}
-          onRun={(i) => runSelectedIndex(i)}
-        />
-      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          minHeight: 0,
+          gap: 10,
+        }}
+      >
+        <Header>
+          <AppTitle modeTitle={uiState.practice.modeTitle} />
+          <SearchBar
+            inputRef={searchInputRef}
+            value={query}
+            onChange={(text) => {
+              setQuery(text);
+              dispatch({ type: "SET_SELECTION", index: 0 });
+            }}
+            onKeyDown={onKeyDown}
+            placeholder={
+              kind === "command"
+                ? "Type /lc, /today, /search..."
+                : 'Type keyword (e.g. "leetcode")'
+            }
+          />
+        </Header>
 
-      <FooterHints />
+        <div
+          style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingRight: 4 }}
+        >
+          <BodyRenderer
+            uiState={uiState}
+            sections={sections}
+            onSelect={(idx) => dispatch({ type: "SET_SELECTION", index: idx })}
+            onRun={(idx) => runByIndex(idx)}
+          />
+        </div>
+
+        <FooterHints kind={kind} />
+      </div>
     </LauncherShell>
   );
 }

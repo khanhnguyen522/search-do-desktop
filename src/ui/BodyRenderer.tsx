@@ -1,20 +1,20 @@
-import { SearchResults } from "../flows/search/SearchResults";
-import { PracticeBody } from "../flows/leetcode/PracticeBody";
 import type { UIState, Workflow } from "../app/engine";
+import { SearchResults, type Section } from "../flows/search/SearchResults";
+import { PracticeBody } from "../flows/leetcode/PracticeBody";
 
 type Props = {
   uiState: UIState;
-  items: Workflow[];
-  onSelect: (index: number) => void;
-  onRun: (index: number) => void;
+  sections: Section[];
+  onSelect: (globalIndex: number) => void;
+  onRun: (globalIndex: number) => void;
 };
 
-export function BodyRenderer({ uiState, items, onSelect, onRun }: Props) {
+export function BodyRenderer({ uiState, sections, onSelect, onRun }: Props) {
   switch (uiState.view) {
     case "search":
       return (
         <SearchResults
-          items={items as any} // SearchResults đang nhận Workflow basic; nếu bạn đã đổi type thì bỏ any
+          sections={sections}
           selectedIndex={uiState.selectedIndex}
           onSelect={onSelect}
           onRun={onRun}

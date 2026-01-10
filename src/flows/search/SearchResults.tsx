@@ -1,57 +1,93 @@
 import type { Workflow } from "../../app/engine";
 
-type Props = {
+export type Section = {
+  title: string;
   items: Workflow[];
-  selectedIndex: number;
-  onSelect: (index: number) => void;
-  onRun: (index: number) => void;
+};
+
+type Props = {
+  sections: Section[];
+  selectedIndex: number; // global index
+  onSelect: (globalIndex: number) => void;
+  onRun: (globalIndex: number) => void;
 };
 
 export function SearchResults({
-  items,
+  sections,
   selectedIndex,
   onSelect,
   onRun,
 }: Props) {
-  if (items.length === 0)
-    return <div style={{ opacity: 0.65, marginTop: 12 }}>No results</div>;
+  const total = sections.reduce((sum, s) => sum + s.items.length, 0);
+  if (total === 0) return <div style={{ opacity: 0.65 }}>No results</div>;
+
+  let global = 0;
 
   return (
-    <div style={{ marginTop: 12 }}>
-      {items.map((w, i) => (
-        <div
-          key={w.id}
-          onMouseEnter={() => onSelect(i)}
-          onClick={() => onRun(i)}
-          style={{
-            padding: "10px 12px",
-            cursor: "pointer",
-            borderRadius: 10,
-            background:
-              i === selectedIndex ? "rgba(255,255,255,0.10)" : "transparent",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 13 }}>
-              {w.type === "command" ? w.name : w.name}
-            </div>
-            <div style={{ fontSize: 11, opacity: 0.7 }}>
-              {w.type === "command"
-                ? w.description ?? w.keywords.join(", ")
-                : w.keywords.join(", ")}
-            </div>
-          </div>
+    <div>
+      {sections.map((sec) => {
+        if (sec.items.length === 0) return null;
 
-          {w.type === "action" && w.durationMinutes ? (
-            <div style={{ fontSize: 11, opacity: 0.7 }}>
-              {Math.round(w.durationMinutes * 60)}s
+        return (
+          <div key={sec.title} style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 11, opacity: 0.7, margin: "6px 0" }}>
+              {sec.title.toUpperCase()}
             </div>
-          ) : null}
-        </div>
-      ))}
+
+            {sec.items.map((w) => {
+              const idx = global++;
+              const isSelected = idx === selectedIndex;
+
+              return (
+                <div
+                  key={w.id}
+                  onMouseEnter={() => onSelect(idx)}
+                  onClick={() => onRun(idx)}
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: 10,
+                    cursor: "pointer",
+                    background: isSelected
+                      ? "rgba(255,255,255,0.10)"
+                      : "transparent",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        fontSize: 13,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {w.name}
+                    </div>
+
+                    <div style={{ fontSize: 11, opacity: 0.7 }}>
+                      {"description" in w && w.description
+                        ? w.description
+                        : w.keywords.join(", ")}
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: 11, opacity: 0.7 }}>
+                    {w.type === "command"
+                      ? "↵"
+                      : w.durationMinutes
+                      ? `${Math.round(w.durationMinutes * 60)}s`
+                      : ""}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
     </div>
   );
 }
