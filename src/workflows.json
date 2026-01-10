@@ -1,15 +1,42 @@
 [
   {
-    "id": "leetcode",
-    "name": "LeetCode Practice",
-    "keywords": ["leetcode", "leet", "algo", "lc"],
-    "url": "https://leetcode.com/problemset/all/",
-    "durationMinutes": 0.1
+    "id": "cmd-lc",
+    "type": "command",
+    "name": "/lc",
+    "keywords": ["lc", "leetcode", "leet"],
+    "description": "Start LeetCode practice flow (Today Plan + Current)",
+    "command": { "action": "START_FLOW", "flow": "leetcode" }
   },
   {
+    "id": "cmd-today",
+    "type": "command",
+    "name": "/today",
+    "keywords": ["today", "plan", "daily"],
+    "description": "Go to Today Plan (practice view)",
+    "command": { "action": "GO_VIEW", "view": "todayPlan" }
+  },
+  {
+    "id": "cmd-search",
+    "type": "command",
+    "name": "/search",
+    "keywords": ["search", "home"],
+    "description": "Back to search view",
+    "command": { "action": "GO_VIEW", "view": "search" }
+  },
+
+  {
+    "id": "open-lc-problems",
+    "type": "action",
+    "name": "Open LeetCode Problemset",
+    "keywords": ["leetcode", "problems", "problemset", "lc"],
+    "url": "https://leetcode.com/problemset/all/"
+  },
+
+  {
     "id": "conan-vpn",
+    "type": "action",
     "name": "Watch Conan (VPN)",
-    "keywords": ["conan"],
+    "keywords": ["conan", "vpn"],
     "openApp": "NordVPN",
     "delayAfterOpenMs": 4000,
     "url": "https://www.youtube.com/watch?v=YXbsFczzaQs&list=PLv1IX6YbPa19RFOI8OzNyJ_De5XG-GgIB&index=52"
