@@ -1,4 +1,5 @@
 import type { Workflow } from "../../app/engine";
+import React, { useEffect, useRef } from "react";
 
 export type Section = {
   title: string;
@@ -22,9 +23,22 @@ export function SearchResults({
   if (total === 0) return <div style={{ opacity: 0.65 }}>No results</div>;
 
   let global = 0;
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const el = container.querySelector(
+      `[data-index="${selectedIndex}"]`
+    ) as HTMLElement | null;
+    if (!el) return;
+
+    el.scrollIntoView({ block: "nearest" });
+  }, [selectedIndex]);
 
   return (
-    <div>
+    <div ref={containerRef}>
       {sections.map((sec) => {
         if (sec.items.length === 0) return null;
 
@@ -41,6 +55,7 @@ export function SearchResults({
               return (
                 <div
                   key={w.id}
+                  data-index={idx}
                   onMouseEnter={() => onSelect(idx)}
                   onClick={() => onRun(idx)}
                   style={{

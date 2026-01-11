@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import workflowsData from "../workflows.json";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Command } from "@tauri-apps/plugin-shell";
 
@@ -14,6 +14,7 @@ import { FooterHints } from "../ui/FooterHints";
 import type { Workflow } from "./engine";
 import { initialState, reducer } from "./engine";
 import type { Section } from "../flows/search/SearchResults";
+import { buildTodayPlan, getProblemById } from "../flows/leetcode/leetcodeData";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -41,6 +42,27 @@ export default function App() {
   useEffect(() => {
     dispatch({ type: "QUERY_KIND_CHANGED", kind });
   }, [kind]);
+
+  useEffect(() => {
+    const w = getCurrentWindow();
+    (async () => {
+      await w.show(); // ✅ ensure window exists & visible
+      await new Promise((r) => setTimeout(r, 50));
+      await w.setSize(new LogicalSize(720, 820));
+      console.log("innerSize after set:", await w.innerSize());
+    })();
+  }, []);
+
+  // Tick only when there is a running problem timer
+  useEffect(() => {
+    if (!uiState.practice.runningProblemId) return;
+
+    const id = window.setInterval(() => {
+      dispatch({ type: "PRACTICE_TICK_RUNNING" });
+    }, 1000);
+
+    return () => window.clearInterval(id);
+  }, [uiState.practice.runningProblemId]);
 
   const filtered = useMemo(() => {
     const base =
@@ -122,13 +144,18 @@ export default function App() {
 
     if (w.type === "command") {
       dispatch({ type: "RUN_COMMAND", command: w.command });
+
+      if (w.command.action === "START_FLOW" && w.command.flow === "leetcode") {
+        const plan = buildTodayPlan();
+        dispatch({ type: "PRACTICE_INIT", modeTitle: "LeetCode", plan });
+      }
       return;
     }
 
     await runAction(w);
   }
 
-  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+  async function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     const isCmdL = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "l";
     const isCmdK = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k";
 
@@ -138,7 +165,6 @@ export default function App() {
       searchInputRef.current?.select();
       return;
     }
-
     if (isCmdK) {
       e.preventDefault();
       setQuery("");
@@ -146,6 +172,70 @@ export default function App() {
       return;
     }
 
+    const inPractice = uiState.view !== "search";
+
+    // ===== Practice keymap =====
+    if (inPractice) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        dispatch({ type: "PRACTICE_MOVE_CURSOR", delta: 1 });
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        dispatch({ type: "PRACTICE_MOVE_CURSOR", delta: -1 });
+        return;
+      }
+      if (e.key === "n" || e.key === "N") {
+        e.preventDefault();
+        dispatch({ type: "PRACTICE_SKIP_NEXT" });
+        return;
+      }
+      if (["1", "2", "3", "4"].includes(e.key)) {
+        e.preventDefault();
+        dispatch({
+          type: "PRACTICE_RATE",
+          rating: Number(e.key) as 1 | 2 | 3 | 4,
+        });
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const cur = uiState.practice.plan[uiState.practice.cursor];
+        const p = cur ? getProblemById(cur.problemId) : undefined;
+
+        if (p?.leetcodeUrl) {
+          await openUrl(p.leetcodeUrl);
+        }
+
+        // ✅ per-problem timer: start/resume current
+        dispatch({ type: "PRACTICE_START_CURRENT", seconds: 20 * 60 });
+        return;
+      }
+      if (e.key === "v" || e.key === "V") {
+        e.preventDefault();
+        const cur = uiState.practice.plan[uiState.practice.cursor];
+        const p = cur ? getProblemById(cur.problemId) : undefined;
+        if (p?.videoUrl) {
+          await openUrl(p.videoUrl);
+        }
+        return;
+      }
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        dispatch({ type: "GO_VIEW", view: "search" });
+        setTimeout(() => {
+          searchInputRef.current?.focus();
+          searchInputRef.current?.select();
+        }, 0);
+        return;
+      }
+
+      return;
+    }
+
+    // ===== Search keymap =====
     if (e.key === "ArrowDown") {
       e.preventDefault();
       dispatch({ type: "MOVE_SELECTION", delta: 1, max: totalItems });
@@ -154,11 +244,10 @@ export default function App() {
       dispatch({ type: "MOVE_SELECTION", delta: -1, max: totalItems });
     } else if (e.key === "Enter") {
       e.preventDefault();
-      runByIndex(safeSelectedIndex);
+      await runByIndex(safeSelectedIndex);
     } else if (e.key === "Escape") {
       e.preventDefault();
-      // ✅ Day3: hide only, do NOT reset query/selection
-      hideLauncher();
+      await hideLauncher();
     }
   }
 
@@ -192,7 +281,12 @@ export default function App() {
         </Header>
 
         <div
-          style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingRight: 4 }}
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            paddingRight: 4,
+          }}
         >
           <BodyRenderer
             uiState={uiState}
