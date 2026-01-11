@@ -23,7 +23,7 @@ export function BodyRenderer({ uiState, sections, onSelect, onRun }: Props) {
 
     case "todayPlan":
     case "current":
-      return <PracticeBody />;
+      return <PracticeBody practice={uiState.practice} />;
 
     default:
       return null;
