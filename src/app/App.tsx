@@ -104,7 +104,7 @@ export default function App() {
 
   const safeSelectedIndex = Math.min(
     uiState.selectedIndex,
-    Math.max(0, totalItems - 1),
+    Math.max(0, totalItems - 1)
   );
 
   async function hideLauncher() {
