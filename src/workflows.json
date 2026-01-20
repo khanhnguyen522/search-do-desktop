@@ -28,14 +28,5 @@
     "name": "Study Databases",
     "keywords": ["db", "database"],
     "url": "https://canvas.udayton.edu/courses/38599"
-  },
-  {
-    "id": "conan-vpn",
-    "type": "action",
-    "name": "fake",
-    "keywords": ["conan", "vpn"],
-    "openApp": "NordVPN",
-    "delayAfterOpenMs": 4000,
-    "url": "https://www.youtube.com/watch?v=YXbsFczzaQs&list=PLv1IX6YbPa19RFOI8OzNyJ_De5XG-GgIB&index=52"
   }
 ]
