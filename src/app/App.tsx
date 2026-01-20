@@ -110,7 +110,9 @@ export default function App() {
   async function hideLauncher() {
     try {
       await getCurrentWindow().hide();
-    } catch {}
+    } catch (err) {
+      console.debug("hideLauncher failed:", err);
+    }
   }
 
   async function runAction(w: Extract<Workflow, { type: "action" }>) {
