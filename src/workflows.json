@@ -1,21 +1,5 @@
 [
   {
-    "id": "cmd-lc",
-    "type": "command",
-    "name": "/lc",
-    "keywords": ["lc", "leetcode", "leet"],
-    "description": "Start LeetCode practice flow (Today Plan + Current)",
-    "command": { "action": "START_FLOW", "flow": "leetcode" }
-  },
-  {
-    "id": "cmd-today",
-    "type": "command",
-    "name": "/today",
-    "keywords": ["today", "plan", "daily"],
-    "description": "Go to Today Plan (practice view)",
-    "command": { "action": "GO_VIEW", "view": "todayPlan" }
-  },
-  {
     "id": "cmd-search",
     "type": "command",
     "name": "/search",
@@ -31,11 +15,24 @@
     "keywords": ["leetcode", "problems", "problemset", "lc"],
     "url": "https://leetcode.com/problemset/all/"
   },
-
+  {
+    "id": "open-os",
+    "type": "action",
+    "name": "Study Operating Systems",
+    "keywords": ["os", "operating system"],
+    "url": "https://canvas.udayton.edu/courses/38598/files"
+  },
+  {
+    "id": "open-db",
+    "type": "action",
+    "name": "Study Databases",
+    "keywords": ["db", "database"],
+    "url": "https://canvas.udayton.edu/courses/38599"
+  },
   {
     "id": "conan-vpn",
     "type": "action",
-    "name": "Watch Conan (VPN)",
+    "name": "fake",
     "keywords": ["conan", "vpn"],
     "openApp": "NordVPN",
     "delayAfterOpenMs": 4000,

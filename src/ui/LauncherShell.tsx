@@ -10,16 +10,13 @@ export function LauncherShell({ children }: { children: React.ReactNode }) {
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
-
         background: "rgba(18, 18, 20, 0.68)",
         backdropFilter: "blur(28px)",
         WebkitBackdropFilter: "blur(28px)",
-
-        boxShadow: "0 14px 40px rgba(0,0,0,0.40)", // 👈 shadow nhẹ hơn
-        border: "1px solid rgba(255,255,255,0.08)", // 👈 border dịu hơn
+        boxShadow: "0 14px 40px rgba(0,0,0,0.40)",
+        border: "1px solid rgba(255,255,255,0.08)",
       }}
     >
-      {/* ✅ gradient overlay để nhìn premium */}
       <div
         style={{
           position: "absolute",

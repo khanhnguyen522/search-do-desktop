@@ -1,6 +1,5 @@
-import type { UIState, Workflow } from "../app/engine";
+import type { UIState } from "../app/engine";
 import { SearchResults, type Section } from "../flows/search/SearchResults";
-import { PracticeBody } from "../flows/leetcode/PracticeBody";
 
 type Props = {
   uiState: UIState;
@@ -20,11 +19,6 @@ export function BodyRenderer({ uiState, sections, onSelect, onRun }: Props) {
           onRun={onRun}
         />
       );
-
-    case "todayPlan":
-    case "current":
-      return <PracticeBody practice={uiState.practice} />;
-
     default:
       return null;
   }

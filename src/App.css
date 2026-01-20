@@ -6,8 +6,9 @@ body,
   margin: 0;
   padding: 0;
   background: transparent !important;
-  overflow: hidden; /* ✅ chặn scroll ở body */
+  overflow: hidden;
 }
+
 * {
   box-sizing: border-box;
 }

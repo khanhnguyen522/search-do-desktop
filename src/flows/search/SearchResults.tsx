@@ -1,5 +1,5 @@
 import type { Workflow } from "../../app/engine";
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 export type Section = {
   title: string;
