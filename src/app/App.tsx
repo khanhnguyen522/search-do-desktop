@@ -104,13 +104,15 @@ export default function App() {
 
   const safeSelectedIndex = Math.min(
     uiState.selectedIndex,
-    Math.max(0, totalItems - 1)
+    Math.max(0, totalItems - 1),
   );
 
   async function hideLauncher() {
     try {
       await getCurrentWindow().hide();
-    } catch {}
+    } catch (err) {
+      console.debug("hideLauncher failed:", err);
+    }
   }
 
   async function runAction(w: Extract<Workflow, { type: "action" }>) {
