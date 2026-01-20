@@ -7,12 +7,11 @@
     "description": "Back to search view",
     "command": { "action": "GO_VIEW", "view": "search" }
   },
-
   {
     "id": "open-lc-problems",
     "type": "action",
     "name": "Open LeetCode Problemset",
-    "keywords": ["leetcode", "problems", "problemset", "lc"],
+    "keywords": ["leetcode", "problems", "lc"],
     "url": "https://leetcode.com/problemset/all/"
   },
   {
@@ -28,5 +27,12 @@
     "name": "Study Databases",
     "keywords": ["db", "database"],
     "url": "https://canvas.udayton.edu/courses/38599"
+  },
+  {
+    "id": "open-aws",
+    "type": "action",
+    "name": "Study AWS",
+    "keywords": ["aws", "cloud", "cantrill"],
+    "url": "https://learn.cantrill.io/courses/1820301/lectures/41301369"
   }
 ]
