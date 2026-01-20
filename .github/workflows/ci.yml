@@ -8,7 +8,7 @@ on:
   pull_request:
 
 jobs:
-  web:
+  code-quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
