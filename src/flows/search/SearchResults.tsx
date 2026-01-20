@@ -94,8 +94,8 @@ export function SearchResults({
                     {w.type === "command"
                       ? "↵"
                       : w.durationMinutes
-                      ? `${Math.round(w.durationMinutes * 60)}s`
-                      : ""}
+                        ? `${Math.round(w.durationMinutes * 60)}s`
+                        : ""}
                   </div>
                 </div>
               );
