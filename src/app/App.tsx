@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import workflowsData from "../workflows.json";
-import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Command } from "@tauri-apps/plugin-shell";
 import { LauncherShell } from "../ui/LauncherShell";
@@ -100,16 +100,6 @@ export default function App() {
   useEffect(() => {
     dispatch({ type: "QUERY_KIND_CHANGED", kind });
   }, [kind]);
-
-  // Window sizing
-  useEffect(() => {
-    const w = getCurrentWindow();
-    (async () => {
-      await w.show();
-      await new Promise((r) => setTimeout(r, 50));
-      await w.setSize(new LogicalSize(720, 820));
-    })();
-  }, []);
 
   // Search view ONLY: command/action (no todos)
   const workflowsForSearch: SearchWorkflow[] = useMemo(() => {
