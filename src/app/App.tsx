@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import workflowsData from "../workflows.json";
-import {
-  getCurrentWindow,
-  PhysicalSize,
-  PhysicalPosition,
-  primaryMonitor,
-} from "@tauri-apps/api/window";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Command } from "@tauri-apps/plugin-shell";
 import { LauncherShell } from "../ui/LauncherShell";
@@ -105,53 +100,6 @@ export default function App() {
   useEffect(() => {
     dispatch({ type: "QUERY_KIND_CHANGED", kind });
   }, [kind]);
-
-  // Window sizing
-  // useEffect(() => {
-  //   const w = getCurrentWindow();
-  //   (async () => {
-  //     await w.show();
-  //     await new Promise((r) => setTimeout(r, 50));
-  //     await w.setSize(new LogicalSize(720, 820));
-  //   })();
-  // }, []);
-  // useEffect(() => {
-  //   const w = getCurrentWindow();
-
-  //   (async () => {
-  //     const monitor = await primaryMonitor();
-  //     if (!monitor) {
-  //       // fallback: just show
-  //       await w.show();
-  //       return;
-  //     }
-
-  //     const scale = monitor.scaleFactor ?? 1;
-
-  //     // desired logical size
-  //     const width = 720;
-  //     const height = 820;
-
-  //     // convert to physical for retina correctness
-  //     const winW = Math.round(width * scale);
-  //     const winH = Math.round(height * scale);
-
-  //     const marginRight = 16;
-  //     const marginRightPx = Math.round(marginRight * scale);
-
-  //     const x = monitor.position.x + monitor.size.width - winW - marginRightPx;
-
-  //     const y =
-  //       monitor.position.y + Math.round((monitor.size.height - winH) / 2);
-
-  //     await w.setSize(new PhysicalSize(winW, winH));
-  //     await w.setPosition(new PhysicalPosition(x, y));
-
-  //     await w.show();
-  //     await new Promise((r) => setTimeout(r, 16));
-  //     await w.setPosition(new PhysicalPosition(x, y));
-  //   })();
-  // }, []);
 
   // Search view ONLY: command/action (no todos)
   const workflowsForSearch: SearchWorkflow[] = useMemo(() => {
