@@ -58,7 +58,7 @@ export function TodosView({
     if (!container) return;
 
     const el = container.querySelector(
-      `[data-todo-index="${selectedIndex}"]`,
+      `[data-todo-index="${selectedIndex}"]`
     ) as HTMLElement | null;
 
     if (!el) return;

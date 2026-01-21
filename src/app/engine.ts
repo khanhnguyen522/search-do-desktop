@@ -91,7 +91,7 @@ export function reducer(state: UIState, ev: Event): UIState {
       const maxIndex = Math.max(0, ev.max - 1);
       const next = Math.min(
         maxIndex,
-        Math.max(0, state.selectedIndex + ev.delta),
+        Math.max(0, state.selectedIndex + ev.delta)
       );
       return { ...state, selectedIndex: next };
     }
@@ -136,7 +136,7 @@ export function reducer(state: UIState, ev: Event): UIState {
       const maxIndex = Math.max(0, ev.max - 1);
       const next = Math.min(
         maxIndex,
-        Math.max(0, state.todos.selectedIndex + ev.delta),
+        Math.max(0, state.todos.selectedIndex + ev.delta)
       );
       return { ...state, todos: { ...state.todos, selectedIndex: next } };
     }

@@ -38,7 +38,7 @@ function computeTodosFiltered(
   allTodos: TodoWorkflow[],
   tab: TodoTab,
   tagFilter: string | null,
-  searchText: string,
+  searchText: string
 ): TodoWorkflow[] {
   const qRaw = searchText.trim().toLowerCase();
 
@@ -178,7 +178,7 @@ export default function App() {
 
   const safeSelectedIndex = Math.min(
     uiState.selectedIndex,
-    Math.max(0, totalItems - 1),
+    Math.max(0, totalItems - 1)
   );
 
   // ===== Todos view filtering (single source of truth) =====
@@ -187,13 +187,13 @@ export default function App() {
       todos,
       uiState.todos.tab,
       uiState.todos.tagFilter,
-      todosQuery,
+      todosQuery
     );
   }, [todos, uiState.todos.tab, uiState.todos.tagFilter, todosQuery]);
 
   const safeTodosIndex = Math.min(
     uiState.todos.selectedIndex,
-    Math.max(0, todosFiltered.length - 1),
+    Math.max(0, todosFiltered.length - 1)
   );
 
   function getSelectedTodo(): TodoWorkflow | null {
@@ -390,7 +390,7 @@ export default function App() {
 
       await setTodoStatus(
         todo.id,
-        todo.status === "archived" ? "active" : "archived",
+        todo.status === "archived" ? "active" : "archived"
       );
       return;
     }
