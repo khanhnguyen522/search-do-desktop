@@ -1,6 +1,9 @@
-export type View = "search";
+export type View = "search" | "todos";
 
 export type CommandAction = { action: "GO_VIEW"; view: View };
+
+export type TodoStatus = "active" | "done" | "archived";
+export type TodoTab = TodoStatus;
 
 export type Workflow =
   | {
@@ -21,6 +24,23 @@ export type Workflow =
       openApp?: string;
       delayAfterOpenMs?: number;
       durationMinutes?: number;
+    }
+  | {
+      id: string;
+      type: "todo";
+      name: string;
+      keywords: string[];
+      description?: string;
+      status: TodoStatus;
+      createdAt: number;
+      completedAt?: number;
+      archivedAt?: number;
+      tags: string[];
+      dueAt?: number;
+      url?: string;
+      openApp?: string;
+      delayAfterOpenMs?: number;
+      durationMinutes?: number;
     };
 
 export type QueryKind = "command" | "filter";
@@ -29,18 +49,34 @@ export type UIState = {
   view: View;
   selectedIndex: number;
   search: { kind: QueryKind };
+  todos: {
+    tab: TodoTab;
+    selectedIndex: number;
+    tagFilter: string | null;
+  };
 };
 
 export type Event =
   | { type: "QUERY_KIND_CHANGED"; kind: QueryKind }
   | { type: "MOVE_SELECTION"; delta: number; max: number }
   | { type: "SET_SELECTION"; index: number }
-  | { type: "RUN_COMMAND"; command: CommandAction };
+  | { type: "RUN_COMMAND"; command: CommandAction }
+  | { type: "GO_VIEW"; view: View }
+  // Todos view
+  | { type: "TODOS_SET_TAB"; tab: TodoTab }
+  | { type: "TODOS_MOVE_SELECTION"; delta: number; max: number }
+  | { type: "TODOS_SET_SELECTION"; index: number }
+  | { type: "TODOS_SET_TAG_FILTER"; tag: string | null };
 
 export const initialState: UIState = {
   view: "search",
   selectedIndex: 0,
   search: { kind: "filter" },
+  todos: {
+    tab: "active",
+    selectedIndex: 0,
+    tagFilter: null,
+  },
 };
 
 export function reducer(state: UIState, ev: Event): UIState {
@@ -64,13 +100,60 @@ export function reducer(state: UIState, ev: Event): UIState {
     case "SET_SELECTION":
       return { ...state, selectedIndex: Math.max(0, ev.index) };
 
+    case "GO_VIEW":
+      return {
+        ...state,
+        view: ev.view,
+        selectedIndex: 0,
+        todos:
+          ev.view === "todos"
+            ? { ...state.todos, selectedIndex: 0 }
+            : state.todos,
+      };
+
     case "RUN_COMMAND": {
       const cmd = ev.command;
       if (cmd.action === "GO_VIEW") {
-        return { ...state, view: cmd.view, selectedIndex: 0 };
+        return {
+          ...state,
+          view: cmd.view,
+          selectedIndex: 0,
+          todos:
+            cmd.view === "todos"
+              ? { ...state.todos, selectedIndex: 0 }
+              : state.todos,
+        };
       }
       return state;
     }
+
+    // ===== Todos view reducer =====
+    case "TODOS_SET_TAB":
+      return {
+        ...state,
+        todos: { ...state.todos, tab: ev.tab, selectedIndex: 0 },
+      };
+
+    case "TODOS_MOVE_SELECTION": {
+      const maxIndex = Math.max(0, ev.max - 1);
+      const next = Math.min(
+        maxIndex,
+        Math.max(0, state.todos.selectedIndex + ev.delta)
+      );
+      return { ...state, todos: { ...state.todos, selectedIndex: next } };
+    }
+
+    case "TODOS_SET_SELECTION":
+      return {
+        ...state,
+        todos: { ...state.todos, selectedIndex: Math.max(0, ev.index) },
+      };
+
+    case "TODOS_SET_TAG_FILTER":
+      return {
+        ...state,
+        todos: { ...state.todos, tagFilter: ev.tag, selectedIndex: 0 },
+      };
 
     default:
       return state;

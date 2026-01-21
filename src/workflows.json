@@ -8,6 +8,14 @@
     "command": { "action": "GO_VIEW", "view": "search" }
   },
   {
+    "id": "cmd-todos",
+    "type": "command",
+    "name": "/todos",
+    "keywords": ["todo", "todos", "task"],
+    "description": "Open Todos view",
+    "command": { "action": "GO_VIEW", "view": "todos" }
+  },
+  {
     "id": "open-lc-problems",
     "type": "action",
     "name": "Open LeetCode Problemset",
