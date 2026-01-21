@@ -3,18 +3,15 @@ import workflowsData from "../workflows.json";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Command } from "@tauri-apps/plugin-shell";
-
 import { LauncherShell } from "../ui/LauncherShell";
 import { Header } from "../ui/Header";
 import { AppTitle } from "../ui/AppTitle";
 import { SearchBar } from "../ui/SearchBar";
 import { BodyRenderer } from "../ui/BodyRenderer";
 import { FooterHints } from "../ui/FooterHints";
-
 import { initialState, reducer } from "./engine";
 import type { Workflow, TodoStatus, UIState, TodoTab } from "./engine";
 import type { Section } from "../flows/search/SearchResults";
-
 import { loadTodos, saveTodos, type TodoWorkflow } from "./todoStore";
 
 type SearchWorkflow = Extract<Workflow, { type: "command" | "action" }>;
@@ -41,7 +38,7 @@ function computeTodosFiltered(
   allTodos: TodoWorkflow[],
   tab: TodoTab,
   tagFilter: string | null,
-  searchText: string
+  searchText: string,
 ): TodoWorkflow[] {
   const qRaw = searchText.trim().toLowerCase();
 
@@ -73,13 +70,9 @@ function computeTodosFiltered(
 
 export default function App() {
   const staticWorkflows: Workflow[] = workflowsData as Workflow[];
-
   const [uiState, dispatch] = useReducer(reducer, initialState);
-
-  // ✅ split queries per view
   const [searchQuery, setSearchQuery] = useState("");
   const [todosQuery, setTodosQuery] = useState("");
-
   const [todos, setTodos] = useState<TodoWorkflow[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -118,7 +111,7 @@ export default function App() {
     })();
   }, []);
 
-  // ✅ Search view ONLY: command/action (no todos)
+  // Search view ONLY: command/action (no todos)
   const workflowsForSearch: SearchWorkflow[] = useMemo(() => {
     return staticWorkflows.filter(isSearchWorkflow);
   }, [staticWorkflows]);
@@ -168,7 +161,7 @@ export default function App() {
     ];
   }, [filteredSearch, kind]);
 
-  // ✅ flat typed as SearchWorkflow => runByIndex safe
+  // flat typed as SearchWorkflow => runByIndex safe
   const flat: SearchWorkflow[] = useMemo(() => {
     const out: SearchWorkflow[] = [];
     for (const s of sections) {
@@ -185,7 +178,7 @@ export default function App() {
 
   const safeSelectedIndex = Math.min(
     uiState.selectedIndex,
-    Math.max(0, totalItems - 1)
+    Math.max(0, totalItems - 1),
   );
 
   // ===== Todos view filtering (single source of truth) =====
@@ -194,13 +187,13 @@ export default function App() {
       todos,
       uiState.todos.tab,
       uiState.todos.tagFilter,
-      todosQuery
+      todosQuery,
     );
   }, [todos, uiState.todos.tab, uiState.todos.tagFilter, todosQuery]);
 
   const safeTodosIndex = Math.min(
     uiState.todos.selectedIndex,
-    Math.max(0, todosFiltered.length - 1)
+    Math.max(0, todosFiltered.length - 1),
   );
 
   function getSelectedTodo(): TodoWorkflow | null {
@@ -322,7 +315,6 @@ export default function App() {
     });
   }
 
-  // ✅ w is SearchWorkflow => safe to call runAction only when action
   async function runByIndex(globalIndex: number) {
     const w = flat[globalIndex];
     if (!w) return;
@@ -343,8 +335,6 @@ export default function App() {
   async function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     const isCmdL = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "l";
     const isCmdK = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k";
-
-    // ✅ option 1 shortcuts
     const isArchiveShortcut =
       (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "a";
 
@@ -400,7 +390,7 @@ export default function App() {
 
       await setTodoStatus(
         todo.id,
-        todo.status === "archived" ? "active" : "archived"
+        todo.status === "archived" ? "active" : "archived",
       );
       return;
     }
@@ -530,7 +520,6 @@ export default function App() {
             sections={sections}
             onSelect={(idx) => dispatch({ type: "SET_SELECTION", index: idx })}
             onRun={(idx) => runByIndex(idx)}
-            // ✅ PASS FILTERED LIST ONLY (no double-filter bugs)
             todos={
               todosFiltered as unknown as Extract<Workflow, { type: "todo" }>[]
             }

@@ -58,7 +58,7 @@ export function TodosView({
     if (!container) return;
 
     const el = container.querySelector(
-      `[data-todo-index="${selectedIndex}"]`
+      `[data-todo-index="${selectedIndex}"]`,
     ) as HTMLElement | null;
 
     if (!el) return;
@@ -70,7 +70,6 @@ export function TodosView({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {/* Top bar: compact */}
       <div
         style={{
           display: "flex",
@@ -84,8 +83,6 @@ export function TodosView({
           <TabChip active={tab === "done"} label="2 Done" />
           <TabChip active={tab === "archived"} label="3 Archived" />
         </div>
-
-        {/* Only show tag pill if filtering */}
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {tagFilter && (
             <span
@@ -109,10 +106,8 @@ export function TodosView({
         </div>
       </div>
 
-      {/* Tag row (optional). Keep but small & not wasting space */}
       {tags.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {/* "all" chip */}
           <span
             style={{
               fontSize: 11,
@@ -145,7 +140,6 @@ export function TodosView({
         </div>
       )}
 
-      {/* List */}
       <div
         ref={containerRef}
         style={{
@@ -216,7 +210,6 @@ export function TodosView({
         )}
       </div>
 
-      {/* Footer hints (updated, compact, no a/d) */}
       <div style={{ fontSize: 11, opacity: 0.65, userSelect: "none" }}>
         Enter: toggle • Cmd/Ctrl+A: archive • Cmd/Ctrl+⌫: delete • Tab: switch •
         Esc: back

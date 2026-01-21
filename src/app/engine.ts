@@ -62,7 +62,6 @@ export type Event =
   | { type: "SET_SELECTION"; index: number }
   | { type: "RUN_COMMAND"; command: CommandAction }
   | { type: "GO_VIEW"; view: View }
-  // Todos view
   | { type: "TODOS_SET_TAB"; tab: TodoTab }
   | { type: "TODOS_MOVE_SELECTION"; delta: number; max: number }
   | { type: "TODOS_SET_SELECTION"; index: number }
@@ -92,7 +91,7 @@ export function reducer(state: UIState, ev: Event): UIState {
       const maxIndex = Math.max(0, ev.max - 1);
       const next = Math.min(
         maxIndex,
-        Math.max(0, state.selectedIndex + ev.delta)
+        Math.max(0, state.selectedIndex + ev.delta),
       );
       return { ...state, selectedIndex: next };
     }
@@ -127,7 +126,6 @@ export function reducer(state: UIState, ev: Event): UIState {
       return state;
     }
 
-    // ===== Todos view reducer =====
     case "TODOS_SET_TAB":
       return {
         ...state,
@@ -138,7 +136,7 @@ export function reducer(state: UIState, ev: Event): UIState {
       const maxIndex = Math.max(0, ev.max - 1);
       const next = Math.min(
         maxIndex,
-        Math.max(0, state.todos.selectedIndex + ev.delta)
+        Math.max(0, state.todos.selectedIndex + ev.delta),
       );
       return { ...state, todos: { ...state.todos, selectedIndex: next } };
     }

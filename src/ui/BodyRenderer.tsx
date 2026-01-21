@@ -4,13 +4,9 @@ import { TodosView } from "../flows/todos/TodosView";
 
 type Props = {
   uiState: UIState;
-
-  // Search view
   sections: Section[];
   onSelect: (globalIndex: number) => void;
   onRun: (globalIndex: number) => void;
-
-  // Todos view (already filtered + sorted in App)
   todos: Extract<Workflow, { type: "todo" }>[];
   onTodosSelect: (index: number) => void;
 };
