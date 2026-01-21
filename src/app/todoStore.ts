@@ -45,7 +45,6 @@ function getStrArray(x: Record<string, unknown>, key: string): string[] {
   return v.filter((t): t is string => typeof t === "string");
 }
 
-// ✅ Normalize / migrate old schemas -> current TodoWorkflow
 function normalizeTodo(x: unknown): TodoWorkflow | null {
   if (!isRecord(x)) return null;
   if (x.type !== "todo") return null;
@@ -65,7 +64,6 @@ function normalizeTodo(x: unknown): TodoWorkflow | null {
 
   const tags = getStrArray(x, "tags");
 
-  // status: migrate from legacy done/archived booleans if needed
   let status: "active" | "done" | "archived" = "active";
   const statusRaw = getStr(x, "status");
   if (
