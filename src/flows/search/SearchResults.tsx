@@ -13,6 +13,27 @@ type Props = {
   onRun: (globalIndex: number) => void;
 };
 
+type TodoStatus = "active" | "done" | "archived";
+
+type TodoWorkflow = Extract<Workflow, { type: "todo" }>;
+
+function getTodoStatus(todo: TodoWorkflow): TodoStatus {
+  // your current schema: status exists
+  return todo.status;
+}
+
+function markerForTodo(todo: TodoWorkflow) {
+  const s = getTodoStatus(todo);
+  if (s === "archived") return "⧉";
+  if (s === "done") return "✓";
+  return "○";
+}
+
+function isFadedTodo(todo: TodoWorkflow) {
+  const s = getTodoStatus(todo);
+  return s === "done" || s === "archived";
+}
+
 export function SearchResults({
   sections,
   selectedIndex,
@@ -52,6 +73,33 @@ export function SearchResults({
               const idx = global++;
               const isSelected = idx === selectedIndex;
 
+              const isTodo = w.type === "todo";
+              const hasAction =
+                (w.type === "action" || w.type === "todo") &&
+                (Boolean(w.url) || Boolean(w.openApp));
+
+              const rightLabel =
+                w.type === "command"
+                  ? "↵"
+                  : w.type === "todo"
+                    ? hasAction
+                      ? "↵ OPEN"
+                      : getTodoStatus(w) === "archived"
+                        ? "ARCH"
+                        : getTodoStatus(w) === "done"
+                          ? "DONE"
+                          : "TODO"
+                    : w.durationMinutes
+                      ? `${Math.round(w.durationMinutes * 60)}s`
+                      : "";
+
+              const subtitle =
+                "description" in w && w.description
+                  ? w.description
+                  : w.keywords.join(", ");
+
+              const faded = isTodo ? isFadedTodo(w) : false;
+
               return (
                 <div
                   key={w.id}
@@ -68,6 +116,7 @@ export function SearchResults({
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    opacity: faded ? 0.75 : 1,
                   }}
                 >
                   <div style={{ minWidth: 0 }}>
@@ -78,25 +127,27 @@ export function SearchResults({
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
+                        textDecoration: faded ? "line-through" : "none",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
                       }}
                     >
-                      {w.name}
+                      {isTodo ? (
+                        <span style={{ opacity: faded ? 0.95 : 0.6 }}>
+                          {markerForTodo(w)}
+                        </span>
+                      ) : null}
+
+                      <span style={{ minWidth: 0, overflow: "hidden" }}>
+                        {w.name}
+                      </span>
                     </div>
 
-                    <div style={{ fontSize: 11, opacity: 0.7 }}>
-                      {"description" in w && w.description
-                        ? w.description
-                        : w.keywords.join(", ")}
-                    </div>
+                    <div style={{ fontSize: 11, opacity: 0.7 }}>{subtitle}</div>
                   </div>
 
-                  <div style={{ fontSize: 11, opacity: 0.7 }}>
-                    {w.type === "command"
-                      ? "↵"
-                      : w.durationMinutes
-                        ? `${Math.round(w.durationMinutes * 60)}s`
-                        : ""}
-                  </div>
+                  <div style={{ fontSize: 11, opacity: 0.7 }}>{rightLabel}</div>
                 </div>
               );
             })}
