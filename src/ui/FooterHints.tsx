@@ -10,11 +10,10 @@ export function FooterHints({
   if (view === "search") {
     return (
       <div style={{ fontSize: 11, opacity: 0.7 }}>
-        ↑/↓ Select · Enter Run · Esc Hide · Tab Switch · Cmd+L Focus · Cmd+K
-        Clear
+        ↑/↓ Select · Enter Run · Tab Switch · Cmd+L Focus · Cmd+K Clear
         {kind === "command"
           ? " · / commands"
-          : " · t <todo> @today/@tomorrow/@YYYY-MM-DD"}
+          : " · t <todo> @today/@tmr/@YYYY-MM-DD"}
       </div>
     );
   }

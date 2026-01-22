@@ -51,7 +51,7 @@ function parseDueToken(token: string): number | undefined {
   const now = Date.now();
 
   if (t === "@today") return startOfLocalDay(now);
-  if (t === "@tomorrow") return startOfLocalDay(addDaysLocal(now, 1));
+  if (t === "@tmr") return startOfLocalDay(addDaysLocal(now, 1));
   if (t === "@yesterday") return startOfLocalDay(addDaysLocal(now, -1));
 
   if (t.startsWith("@")) {
@@ -431,8 +431,7 @@ export default function App() {
     const isArchiveShortcut = isCmd && key === "a";
     const isCmdD = isCmd && key === "d";
     const isCmdO = isCmd && key === "o";
-    const isCmdShiftO = isCmd && e.shiftKey && key === "o";
-    const isC = !isCmd && !e.altKey && key === "c";
+    const isCmdC = isCmd && key === "c";
 
     const isDeleteShortcut = isCmd && e.key === "Backspace";
     const isCmdArrowLeft = isCmd && e.key === "ArrowLeft";
@@ -470,7 +469,7 @@ export default function App() {
     }
 
     // Toggle calendar
-    if (uiState.view === "todos" && (isCmdShiftO || isC)) {
+    if (uiState.view === "todos" && isCmdC) {
       e.preventDefault();
       if (uiState.todos.mode === "daily") {
         dispatch({ type: "TODOS_TOGGLE_CALENDAR" });

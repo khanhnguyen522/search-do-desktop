@@ -8,6 +8,9 @@
     "fs:default",
     "notification:default",
     "global-shortcut:default",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-mkdir",
     {
       "identifier": "shell:allow-execute",
       "allow": [

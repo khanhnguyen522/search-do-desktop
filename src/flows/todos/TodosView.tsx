@@ -41,12 +41,14 @@ function Chip({
   onClick,
   title,
   compact,
+  subtle,
 }: {
   active: boolean;
   label: string;
   onClick?: () => void;
   title?: string;
   compact?: boolean;
+  subtle?: boolean;
 }) {
   return (
     <span
@@ -57,15 +59,22 @@ function Chip({
         onClick();
       }}
       style={{
-        cursor: onClick ? "default" : "default",
+        cursor: onClick ? "pointer" : "default",
         fontSize: 12,
         padding: compact ? "3px 8px" : "4px 10px",
         borderRadius: 999,
         border: active
-          ? "1px solid rgba(255,255,255,0.22)"
-          : "1px solid rgba(255,255,255,0.12)",
-        background: active ? "rgba(255,255,255,0.12)" : "transparent",
-        opacity: active ? 1 : 0.6,
+          ? "1px solid rgba(255,255,255,0.18)"
+          : "1px solid rgba(255,255,255,0.10)",
+        background: active
+          ? subtle
+            ? "rgba(255,255,255,0.10)"
+            : "rgba(255,255,255,0.12)"
+          : "transparent",
+        opacity: active ? 0.95 : 0.55,
+        fontWeight: active ? 600 : 520,
+        boxShadow: "none",
+        transform: "none",
         userSelect: "none",
         whiteSpace: "nowrap",
         display: "inline-flex",
@@ -98,9 +107,9 @@ function IconBtn({
         fontSize: 12,
         padding: "4px 8px",
         borderRadius: 10,
-        border: "1px solid rgba(255,255,255,0.12)",
-        background: "rgba(255,255,255,0.04)",
-        opacity: 0.9,
+        border: "1px solid rgba(255,255,255,0.10)",
+        background: "rgba(255,255,255,0.03)",
+        opacity: 0.85,
         userSelect: "none",
         whiteSpace: "nowrap",
         display: "inline-flex",
@@ -193,7 +202,7 @@ export function TodosView({
   }, [selectedIndex]);
 
   const tabLabel =
-    tab === "active" ? "Active" : tab === "done" ? "Done" : "Archived";
+    tab === "active" ? "To-do" : tab === "done" ? "Done" : "Archived";
 
   const dayLabel = formatDayLabel(selectedDayStartMs);
 
@@ -214,7 +223,6 @@ export function TodosView({
     focusList();
   }
 
-  // When calendar opens: focus wrapper
   useEffect(() => {
     if (!calendarOpen) return;
     requestAnimationFrame(() => {
@@ -224,12 +232,22 @@ export function TodosView({
     });
   }, [calendarOpen]);
 
-  // If leave daily (Scheduled) => close calendar
   useEffect(() => {
     if (mode !== "daily" && calendarOpen) onSetCalendarOpen(false);
   }, [mode, calendarOpen, onSetCalendarOpen]);
 
   const showScheduledControls = mode === "daily";
+
+  const emptyMessage =
+    tab === "active"
+      ? "No to-dos. Create one with: t Buy milk"
+      : tab === "done"
+        ? "No done todos yet."
+        : "No archived todos.";
+
+  // ✅ highlight Today chip when selected day is today
+  const isSelectedToday =
+    startOfLocalDay(selectedDayStartMs) === startOfLocalDay(Date.now());
 
   return (
     <div
@@ -241,10 +259,11 @@ export function TodosView({
         gap: 10,
       }}
     >
+      {/* Top controls card */}
       <div
         style={{
-          border: "1px solid rgba(255,255,255,0.10)",
-          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(255,255,255,0.03)",
           borderRadius: 14,
           padding: "10px 10px",
           display: "flex",
@@ -262,12 +281,14 @@ export function TodosView({
         >
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <Chip
+              subtle
               active={mode === "daily"}
               label="Scheduled"
               onClick={() => onSetMode("daily")}
               title="Scheduled (Cmd/Ctrl+D)"
             />
             <Chip
+              subtle
               active={mode === "occasional"}
               label="Occasional"
               onClick={() => onSetMode("occasional")}
@@ -278,12 +299,12 @@ export function TodosView({
           <div
             style={{
               fontSize: 12,
-              opacity: 0.75,
+              opacity: 0.72,
               userSelect: "none",
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
-              maxWidth: "55%",
+              maxWidth: "58%",
               textAlign: "right",
             }}
             title={showScheduledControls ? dayLabel : "Occasional list"}
@@ -293,15 +314,7 @@ export function TodosView({
         </div>
 
         {showScheduledControls && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
               <IconBtn
                 label="←"
@@ -318,10 +331,10 @@ export function TodosView({
                   fontSize: 12,
                   padding: "4px 8px",
                   borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.12)",
+                  border: "1px solid rgba(255,255,255,0.10)",
                   background: "rgba(0,0,0,0.10)",
                   color: "inherit",
-                  opacity: 0.95,
+                  opacity: 0.9,
                   width: 100,
                 }}
               />
@@ -331,14 +344,19 @@ export function TodosView({
                 onClick={() => onShiftDay(1)}
                 title="Next day (Cmd/Ctrl+→)"
               />
+
+              {/* ✅ now Today gets the same “active” emphasis when selected day = today */}
               <Chip
+                subtle
                 compact
-                active={false}
+                active={isSelectedToday}
                 label="Today"
                 onClick={onToday}
                 title="Jump to Today (Cmd/Ctrl+T)"
               />
+
               <Chip
+                subtle
                 compact
                 active={calendarOpen}
                 label="Calendar"
@@ -352,6 +370,7 @@ export function TodosView({
         )}
       </div>
 
+      {/* Calendar */}
       {showScheduledControls && calendarOpen && (
         <div
           ref={calendarWrapRef}
@@ -373,17 +392,18 @@ export function TodosView({
         </div>
       )}
 
+      {/* Tag chips */}
       {tags.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           <span
             style={{
               fontSize: 11,
-              opacity: tagFilter === null ? 0.95 : 0.55,
-              border: "1px solid rgba(255,255,255,0.12)",
+              opacity: tagFilter === null ? 0.9 : 0.5,
+              border: "1px solid rgba(255,255,255,0.10)",
               padding: "2px 8px",
               borderRadius: 999,
               userSelect: "none",
-              background: "rgba(255,255,255,0.03)",
+              background: "rgba(255,255,255,0.02)",
             }}
             title="No tag filter"
           >
@@ -395,13 +415,13 @@ export function TodosView({
               key={t}
               style={{
                 fontSize: 11,
-                opacity: tagFilter === t ? 0.95 : 0.55,
-                border: "1px solid rgba(255,255,255,0.12)",
+                opacity: tagFilter === t ? 0.92 : 0.5,
+                border: "1px solid rgba(255,255,255,0.10)",
                 padding: "2px 8px",
                 borderRadius: 999,
                 userSelect: "none",
                 background:
-                  tagFilter === t ? "rgba(255,255,255,0.10)" : "transparent",
+                  tagFilter === t ? "rgba(255,255,255,0.08)" : "transparent",
               }}
               title={`#${t}`}
             >
@@ -411,6 +431,32 @@ export function TodosView({
         </div>
       )}
 
+      {/* Viewing banner */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: 10,
+          padding: "0 2px",
+          userSelect: "none",
+        }}
+      >
+        <div style={{ fontSize: 12, opacity: 0.8 }}>
+          Viewing:{" "}
+          <span style={{ fontWeight: 750, opacity: 0.95 }}>{tabLabel}</span>
+          <span style={{ opacity: 0.65 }}>
+            {" "}
+            • {mode === "daily" ? "Scheduled" : "Occasional"}
+          </span>
+        </div>
+
+        <div style={{ fontSize: 12, opacity: 0.65 }}>
+          {filtered.length} item{filtered.length === 1 ? "" : "s"}
+        </div>
+      </div>
+
+      {/* List */}
       <div
         ref={containerRef}
         style={{
@@ -418,6 +464,10 @@ export function TodosView({
           minHeight: 0,
           overflowY: "auto",
           paddingRight: 4,
+          borderRadius: 12,
+          border: "1px solid rgba(255,255,255,0.06)",
+          background: "rgba(255,255,255,0.015)",
+          padding: 6,
         }}
         onMouseDown={() => {
           if (calendarOpen) onSetCalendarOpen(false);
@@ -426,8 +476,15 @@ export function TodosView({
         <div ref={listFocusRef} tabIndex={0} style={{ outline: "none" }} />
 
         {filtered.length === 0 ? (
-          <div style={{ opacity: 0.65 }}>
-            No <b>{tab}</b> todos
+          <div
+            style={{
+              opacity: 0.7,
+              padding: "10px 8px",
+              fontSize: 12,
+              lineHeight: 1.35,
+            }}
+          >
+            {emptyMessage}
           </div>
         ) : (
           filtered.map((t, i) => {
@@ -443,10 +500,10 @@ export function TodosView({
                   padding: "9px 10px",
                   borderRadius: 12,
                   background: selected
-                    ? "rgba(255,255,255,0.10)"
+                    ? "rgba(255,255,255,0.08)"
                     : "transparent",
                   border: selected
-                    ? "1px solid rgba(255,255,255,0.12)"
+                    ? "1px solid rgba(255,255,255,0.10)"
                     : "1px solid transparent",
                   display: "flex",
                   justifyContent: "space-between",
@@ -460,7 +517,7 @@ export function TodosView({
                       fontWeight: 650,
                       fontSize: 13,
                       textDecoration: isDone ? "line-through" : "none",
-                      opacity: isDone ? 0.7 : 1,
+                      opacity: isDone ? 0.72 : 1,
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -469,7 +526,7 @@ export function TodosView({
                     {t.name}
                   </div>
 
-                  <div style={{ fontSize: 11, opacity: 0.65 }}>
+                  <div style={{ fontSize: 11, opacity: 0.62 }}>
                     {t.tags.length ? t.tags.map((x) => `#${x}`).join(" ") : "—"}
                   </div>
                 </div>
@@ -487,6 +544,7 @@ export function TodosView({
         )}
       </div>
 
+      {/* Tabs row (subtle) */}
       <div
         style={{
           display: "flex",
@@ -494,34 +552,39 @@ export function TodosView({
           alignItems: "center",
           justifyContent: "space-between",
           flexWrap: "wrap",
+          border: "1px solid rgba(255,255,255,0.06)",
+          background: "rgba(255,255,255,0.02)",
+          borderRadius: 14,
+          padding: "8px 10px",
         }}
       >
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <Chip active={tab === "active"} label="1 Active" />
-          <Chip active={tab === "done"} label="2 Done" />
-          <Chip active={tab === "archived"} label="3 Archived" />
+          <Chip subtle active={tab === "active"} label="To-do" />
+          <Chip subtle active={tab === "done"} label="Done" />
+          <Chip subtle active={tab === "archived"} label="Archived" />
         </div>
 
-        <span style={{ fontSize: 12, opacity: 0.7, userSelect: "none" }}>
+        <span style={{ fontSize: 12, opacity: 0.65, userSelect: "none" }}>
           {filtered.length} {tabLabel}
         </span>
       </div>
 
+      {/* Footer */}
       <div
         style={{
           marginTop: "auto",
           fontSize: 11,
-          opacity: 0.65,
+          opacity: 0.62,
           userSelect: "none",
           paddingTop: 6,
         }}
       >
-        Enter: toggle • Cmd/Ctrl+A: archive • Cmd/Ctrl+⌫: delete • Tab: switch •
-        Esc: back
+        Enter Toggle • Cmd/Ctrl+A Archive • Cmd/Ctrl+⌫ Delete • Tab Switch • Esc
+        Back
         {showScheduledControls
           ? ` • Calendar: ${
               calendarOpen ? "Esc to close" : "C / Cmd+Shift+O to open"
-            } • Cmd/Ctrl+←/→ • Cmd/Ctrl+T: Today`
+            } • Cmd/Ctrl+←/→ • Cmd/Ctrl+T Today`
           : ""}
       </div>
     </div>
