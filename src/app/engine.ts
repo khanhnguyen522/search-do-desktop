@@ -5,6 +5,8 @@ export type CommandAction = { action: "GO_VIEW"; view: View };
 export type TodoStatus = "active" | "done" | "archived";
 export type TodoTab = TodoStatus;
 
+export type TodosMode = "daily" | "occasional";
+
 export type Workflow =
   | {
       id: string;
@@ -53,6 +55,10 @@ export type UIState = {
     tab: TodoTab;
     selectedIndex: number;
     tagFilter: string | null;
+
+    mode: TodosMode; // daily | occasional
+    selectedDayStartMs: number;
+    calendarOpen: boolean;
   };
 };
 
@@ -65,7 +71,25 @@ export type Event =
   | { type: "TODOS_SET_TAB"; tab: TodoTab }
   | { type: "TODOS_MOVE_SELECTION"; delta: number; max: number }
   | { type: "TODOS_SET_SELECTION"; index: number }
-  | { type: "TODOS_SET_TAG_FILTER"; tag: string | null };
+  | { type: "TODOS_SET_TAG_FILTER"; tag: string | null }
+  | { type: "TODOS_SET_MODE"; mode: TodosMode }
+  | { type: "TODOS_SET_DAY"; dayStartMs: number }
+  | { type: "TODOS_SHIFT_DAY"; delta: number }
+  | { type: "TODOS_TODAY" }
+  | { type: "TODOS_TOGGLE_CALENDAR" }
+  | { type: "TODOS_SET_CALENDAR_OPEN"; open: boolean };
+
+function startOfLocalDay(ts: number) {
+  const d = new Date(ts);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+function addDaysLocal(dayStartMs: number, days: number) {
+  const d = new Date(dayStartMs);
+  d.setDate(d.getDate() + days);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
 
 export const initialState: UIState = {
   view: "search",
@@ -75,6 +99,9 @@ export const initialState: UIState = {
     tab: "active",
     selectedIndex: 0,
     tagFilter: null,
+    mode: "occasional",
+    selectedDayStartMs: startOfLocalDay(Date.now()),
+    calendarOpen: false,
   },
 };
 
@@ -151,6 +178,69 @@ export function reducer(state: UIState, ev: Event): UIState {
       return {
         ...state,
         todos: { ...state.todos, tagFilter: ev.tag, selectedIndex: 0 },
+      };
+
+    case "TODOS_SET_MODE":
+      return {
+        ...state,
+        todos: {
+          ...state.todos,
+          mode: ev.mode,
+          selectedIndex: 0,
+          calendarOpen: ev.mode === "daily" ? state.todos.calendarOpen : false,
+        },
+      };
+
+    case "TODOS_SET_DAY":
+      return {
+        ...state,
+        todos: {
+          ...state.todos,
+          selectedDayStartMs: startOfLocalDay(ev.dayStartMs),
+          selectedIndex: 0,
+        },
+      };
+
+    case "TODOS_SHIFT_DAY":
+      return {
+        ...state,
+        todos: {
+          ...state.todos,
+          selectedDayStartMs: addDaysLocal(
+            state.todos.selectedDayStartMs,
+            ev.delta
+          ),
+          selectedIndex: 0,
+        },
+      };
+
+    case "TODOS_TODAY":
+      return {
+        ...state,
+        todos: {
+          ...state.todos,
+          selectedDayStartMs: startOfLocalDay(Date.now()),
+          selectedIndex: 0,
+        },
+      };
+
+    case "TODOS_TOGGLE_CALENDAR":
+      return {
+        ...state,
+        todos: {
+          ...state.todos,
+          calendarOpen:
+            state.todos.mode === "daily" ? !state.todos.calendarOpen : false,
+        },
+      };
+
+    case "TODOS_SET_CALENDAR_OPEN":
+      return {
+        ...state,
+        todos: {
+          ...state.todos,
+          calendarOpen: state.todos.mode === "daily" ? ev.open : false,
+        },
       };
 
     default:

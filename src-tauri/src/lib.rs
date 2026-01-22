@@ -35,7 +35,7 @@ pub fn run() {
       };
 
       let panel_w: f64 = 375.0;
-      let panel_h: f64 = 620.0;
+      let panel_h: f64 = 720.0;
       let top_offset: f64 = 80.0;
       let right_margin: f64 = 16.0;
 

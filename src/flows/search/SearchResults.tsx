@@ -18,7 +18,6 @@ type TodoStatus = "active" | "done" | "archived";
 type TodoWorkflow = Extract<Workflow, { type: "todo" }>;
 
 function getTodoStatus(todo: TodoWorkflow): TodoStatus {
-  // your current schema: status exists
   return todo.status;
 }
 
