@@ -34,6 +34,43 @@ function isLikelyUrl(s: string) {
   return t.startsWith("http://") || t.startsWith("https://");
 }
 
+function startOfLocalDay(ts: number) {
+  const d = new Date(ts);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+function addDaysLocal(ts: number, days: number) {
+  const d = new Date(ts);
+  d.setDate(d.getDate() + days);
+  return d.getTime();
+}
+
+function parseDueToken(token: string): number | undefined {
+  const t = token.trim().toLowerCase();
+  const now = Date.now();
+
+  if (t === "@today") return startOfLocalDay(now);
+  if (t === "@tomorrow") return startOfLocalDay(addDaysLocal(now, 1));
+  if (t === "@yesterday") return startOfLocalDay(addDaysLocal(now, -1));
+
+  if (t.startsWith("@")) {
+    const s = t.slice(1);
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    if (!m) return undefined;
+
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    const da = Number(m[3]);
+
+    const d = new Date(y, mo - 1, da, 0, 0, 0, 0);
+    if (Number.isNaN(d.getTime())) return undefined;
+    return d.getTime();
+  }
+
+  return undefined;
+}
+
 function computeTodosFiltered(
   allTodos: TodoWorkflow[],
   tab: TodoTab,
@@ -83,7 +120,6 @@ export default function App() {
     ? "command"
     : "filter";
 
-  // Load todos once
   useEffect(() => {
     (async () => {
       try {
@@ -96,17 +132,14 @@ export default function App() {
     })();
   }, []);
 
-  // Inform engine that kind changed => reset global selection (search only)
   useEffect(() => {
     dispatch({ type: "QUERY_KIND_CHANGED", kind });
   }, [kind]);
 
-  // Search view ONLY: command/action (no todos)
   const workflowsForSearch: SearchWorkflow[] = useMemo(() => {
     return staticWorkflows.filter(isSearchWorkflow);
   }, [staticWorkflows]);
 
-  // ===== Search view filtering =====
   const filteredSearch: SearchWorkflow[] = useMemo(() => {
     const base =
       kind === "command"
@@ -151,12 +184,10 @@ export default function App() {
     ];
   }, [filteredSearch, kind]);
 
-  // flat typed as SearchWorkflow => runByIndex safe
   const flat: SearchWorkflow[] = useMemo(() => {
     const out: SearchWorkflow[] = [];
     for (const s of sections) {
       for (const item of s.items) {
-        // Search section contains only command/action, but keep guard
         if (isSearchWorkflow(item as Workflow))
           out.push(item as SearchWorkflow);
       }
@@ -171,15 +202,43 @@ export default function App() {
     Math.max(0, totalItems - 1)
   );
 
-  // ===== Todos view filtering (single source of truth) =====
+  function isSameLocalDay(ts: number, dayStart: number) {
+    return ts >= dayStart && ts < addDaysLocal(dayStart, 1);
+  }
+
   const todosFiltered: TodoWorkflow[] = useMemo(() => {
-    return computeTodosFiltered(
+    const base = computeTodosFiltered(
       todos,
       uiState.todos.tab,
       uiState.todos.tagFilter,
       todosQuery
     );
-  }, [todos, uiState.todos.tab, uiState.todos.tagFilter, todosQuery]);
+
+    if (uiState.todos.mode === "occasional") {
+      return base
+        .filter((t) => t.dueAt == null)
+        .sort((a, b) => b.createdAt - a.createdAt);
+    }
+
+    const dayStart = uiState.todos.selectedDayStartMs;
+
+    return base
+      .filter((t) => typeof t.dueAt === "number")
+      .filter((t) => isSameLocalDay(t.dueAt!, dayStart))
+      .sort((a, b) => {
+        const da = a.dueAt ?? 0;
+        const db = b.dueAt ?? 0;
+        if (da !== db) return da - db;
+        return b.createdAt - a.createdAt;
+      });
+  }, [
+    todos,
+    uiState.todos.tab,
+    uiState.todos.tagFilter,
+    uiState.todos.mode,
+    uiState.todos.selectedDayStartMs,
+    todosQuery,
+  ]);
 
   const safeTodosIndex = Math.min(
     uiState.todos.selectedIndex,
@@ -239,7 +298,6 @@ export default function App() {
   }
 
   async function toggleTodo(todo: TodoWorkflow) {
-    // archived => Enter unarchives
     if (todo.status === "archived") {
       await setTodoStatus(todo.id, "active");
       return;
@@ -263,18 +321,48 @@ export default function App() {
     await toggleTodo(todo);
   }
 
-  async function createTodoFromQuery() {
-    // syntax: "t buy milk" OR "t buy milk https://..."
-    const raw = searchQuery.trim();
-    const titleAndMaybeUrl = raw.slice(2).trim();
-    if (!titleAndMaybeUrl) return;
+  function parseTags(parts: string[]) {
+    const tags: string[] = [];
+    const rest: string[] = [];
+    for (const p of parts) {
+      if (p.startsWith("#") && p.length > 1) tags.push(p.slice(1));
+      else rest.push(p);
+    }
+    return { tags: Array.from(new Set(tags)), rest };
+  }
 
-    const parts = titleAndMaybeUrl.split(/\s+/);
+  async function createTodoFromQuery(rawInput: string) {
+    const raw = rawInput.trim();
+    if (!raw.toLowerCase().startsWith("t ")) return;
+
+    const body = raw.slice(2).trim();
+    if (!body) return;
+
+    let parts = body.split(/\s+/).filter(Boolean);
+
     const last = parts[parts.length - 1];
-    const url = isLikelyUrl(last) ? last : undefined;
+    const url = last && isLikelyUrl(last) ? last : undefined;
+    if (url) parts = parts.slice(0, -1);
 
-    const title = url ? parts.slice(0, -1).join(" ").trim() : titleAndMaybeUrl;
+    let dueAt: number | undefined;
+    const dueIdx = parts.findIndex((p) => p.trim().startsWith("@"));
+    if (dueIdx >= 0) {
+      dueAt = parseDueToken(parts[dueIdx]);
+      parts.splice(dueIdx, 1);
+    }
+
+    const { tags, rest } = parseTags(parts);
+
+    const title = rest.join(" ").trim();
     if (!title) return;
+
+    if (
+      dueAt == null &&
+      uiState.view === "todos" &&
+      uiState.todos.mode === "daily"
+    ) {
+      dueAt = uiState.todos.selectedDayStartMs;
+    }
 
     const now = Date.now();
 
@@ -286,8 +374,12 @@ export default function App() {
       description: url ? "Quick link attached" : undefined,
       status: "active",
       createdAt: now,
-      tags: [],
+      tags,
+      dueAt,
       url,
+      openApp: undefined,
+      delayAfterOpenMs: undefined,
+      durationMinutes: undefined,
     };
 
     await persist([todo, ...todos]);
@@ -296,7 +388,13 @@ export default function App() {
     setTodosQuery("");
 
     dispatch({ type: "TODOS_SET_TAB", tab: "active" });
-    dispatch({ type: "GO_VIEW", view: "todos" });
+
+    if (dueAt != null) dispatch({ type: "TODOS_SET_MODE", mode: "daily" });
+
+    if (uiState.view !== "todos") {
+      dispatch({ type: "GO_VIEW", view: "todos" });
+    }
+
     dispatch({ type: "TODOS_SET_SELECTION", index: 0 });
 
     requestAnimationFrame(() => {
@@ -322,14 +420,78 @@ export default function App() {
     if (todo) await runTodo(todo);
   }
 
-  async function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    const isCmdL = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "l";
-    const isCmdK = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k";
-    const isArchiveShortcut =
-      (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "a";
+  async function onGlobalKeyDownCapture(
+    e: React.KeyboardEvent<HTMLDivElement>
+  ) {
+    const key = e.key.toLowerCase();
+    const isCmd = e.metaKey || e.ctrlKey;
 
-    const isDeleteShortcut = (e.metaKey || e.ctrlKey) && e.key === "Backspace";
+    const isCmdL = isCmd && key === "l";
+    const isCmdK = isCmd && key === "k";
+    const isArchiveShortcut = isCmd && key === "a";
+    const isCmdD = isCmd && key === "d";
+    const isCmdO = isCmd && key === "o";
+    const isCmdShiftO = isCmd && e.shiftKey && key === "o";
+    const isC = !isCmd && !e.altKey && key === "c";
 
+    const isDeleteShortcut = isCmd && e.key === "Backspace";
+    const isCmdArrowLeft = isCmd && e.key === "ArrowLeft";
+    const isCmdArrowRight = isCmd && e.key === "ArrowRight";
+    const isCmdT = isCmd && key === "t";
+    const isEsc = e.key === "Escape";
+
+    const inTodosDaily =
+      uiState.view === "todos" && uiState.todos.mode === "daily";
+
+    if (inTodosDaily && uiState.todos.calendarOpen) {
+      const delta =
+        e.key === "ArrowLeft"
+          ? -1
+          : e.key === "ArrowRight"
+            ? 1
+            : e.key === "ArrowUp"
+              ? -7
+              : e.key === "ArrowDown"
+                ? 7
+                : 0;
+
+      if (delta !== 0) {
+        e.preventDefault();
+        dispatch({ type: "TODOS_SHIFT_DAY", delta });
+        return;
+      }
+    }
+
+    // Esc closes calendar first
+    if (inTodosDaily && uiState.todos.calendarOpen && isEsc) {
+      e.preventDefault();
+      dispatch({ type: "TODOS_SET_CALENDAR_OPEN", open: false });
+      return;
+    }
+
+    // Toggle calendar
+    if (uiState.view === "todos" && (isCmdShiftO || isC)) {
+      e.preventDefault();
+      if (uiState.todos.mode === "daily") {
+        dispatch({ type: "TODOS_TOGGLE_CALENDAR" });
+      }
+      return;
+    }
+
+    // Scheduled / Occasional
+    if (uiState.view === "todos" && isCmdD) {
+      e.preventDefault();
+      dispatch({ type: "TODOS_SET_MODE", mode: "daily" });
+      return;
+    }
+
+    if (uiState.view === "todos" && isCmdO) {
+      e.preventDefault();
+      dispatch({ type: "TODOS_SET_MODE", mode: "occasional" });
+      return;
+    }
+
+    // Tab switch view
     if (e.key === "Tab") {
       e.preventDefault();
       dispatch({
@@ -361,7 +523,6 @@ export default function App() {
 
     // 1/2/3 tabs
     if (e.key === "1" || e.key === "2" || e.key === "3") {
-      // avoid interfering while typing in SEARCH view
       if (uiState.view === "search" && searchQuery.trim().length > 0) return;
 
       e.preventDefault();
@@ -372,7 +533,7 @@ export default function App() {
       return;
     }
 
-    // Archive/Unarchive (todos view only)
+    // Archive/Unarchive
     if (uiState.view === "todos" && isArchiveShortcut) {
       e.preventDefault();
       const todo = getSelectedTodo();
@@ -385,7 +546,7 @@ export default function App() {
       return;
     }
 
-    // Delete (todos view only)
+    // Delete
     if (uiState.view === "todos" && isDeleteShortcut) {
       e.preventDefault();
       const todo = getSelectedTodo();
@@ -395,42 +556,63 @@ export default function App() {
       return;
     }
 
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      if (uiState.view === "todos") {
-        dispatch({
-          type: "TODOS_MOVE_SELECTION",
-          delta: 1,
-          max: todosFiltered.length,
-        });
-      } else {
-        dispatch({ type: "MOVE_SELECTION", delta: 1, max: totalItems });
+    // Daily day navigation (Cmd+←/→, Cmd+T)
+    if (inTodosDaily) {
+      if (isCmdArrowLeft) {
+        e.preventDefault();
+        dispatch({ type: "TODOS_SHIFT_DAY", delta: -1 });
+        return;
       }
-      return;
+      if (isCmdArrowRight) {
+        e.preventDefault();
+        dispatch({ type: "TODOS_SHIFT_DAY", delta: 1 });
+        return;
+      }
+      if (isCmdT) {
+        e.preventDefault();
+        dispatch({ type: "TODOS_TODAY" });
+        return;
+      }
     }
 
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (uiState.view === "todos") {
-        dispatch({
-          type: "TODOS_MOVE_SELECTION",
-          delta: -1,
-          max: todosFiltered.length,
-        });
-      } else {
-        dispatch({ type: "MOVE_SELECTION", delta: -1, max: totalItems });
+    // arrows for selection (only if calendar NOT open)
+    if (!(inTodosDaily && uiState.todos.calendarOpen)) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (uiState.view === "todos") {
+          dispatch({
+            type: "TODOS_MOVE_SELECTION",
+            delta: 1,
+            max: todosFiltered.length,
+          });
+        } else {
+          dispatch({ type: "MOVE_SELECTION", delta: 1, max: totalItems });
+        }
+        return;
       }
-      return;
+
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (uiState.view === "todos") {
+          dispatch({
+            type: "TODOS_MOVE_SELECTION",
+            delta: -1,
+            max: todosFiltered.length,
+          });
+        } else {
+          dispatch({ type: "MOVE_SELECTION", delta: -1, max: totalItems });
+        }
+        return;
+      }
     }
 
     if (e.key === "Enter") {
       e.preventDefault();
 
-      if (
-        uiState.view === "search" &&
-        searchQuery.trim().toLowerCase().startsWith("t ")
-      ) {
-        await createTodoFromQuery();
+      const activeText = activeQuery.trim();
+
+      if (activeText.toLowerCase().startsWith("t ")) {
+        await createTodoFromQuery(activeText);
         return;
       }
 
@@ -442,7 +624,7 @@ export default function App() {
       return;
     }
 
-    if (e.key === "Escape") {
+    if (isEsc) {
       e.preventDefault();
 
       if (uiState.view === "todos") {
@@ -463,6 +645,7 @@ export default function App() {
   return (
     <LauncherShell>
       <div
+        onKeyDownCapture={onGlobalKeyDownCapture}
         style={{
           display: "flex",
           flexDirection: "column",
@@ -486,7 +669,7 @@ export default function App() {
                 dispatch({ type: "SET_SELECTION", index: 0 });
               }
             }}
-            onKeyDown={onKeyDown}
+            onKeyDown={() => {}}
             placeholder={
               uiState.view === "todos"
                 ? "Search todos… (#tag) • Tab switch"
@@ -501,7 +684,7 @@ export default function App() {
           style={{
             flex: 1,
             minHeight: 0,
-            overflowY: "auto",
+            overflow: "hidden",
             paddingRight: 4,
           }}
         >
@@ -516,9 +699,29 @@ export default function App() {
             onTodosSelect={(idx) =>
               dispatch({ type: "TODOS_SET_SELECTION", index: idx })
             }
+            onTodosSetMode={(mode) =>
+              dispatch({ type: "TODOS_SET_MODE", mode })
+            }
+            onTodosShiftDay={(delta) =>
+              dispatch({ type: "TODOS_SHIFT_DAY", delta })
+            }
+            onTodosToday={() => dispatch({ type: "TODOS_TODAY" })}
+            onTodosSetDay={(dayStartMs) =>
+              dispatch({ type: "TODOS_SET_DAY", dayStartMs })
+            }
+            onTodosSetCalendarOpen={(open) =>
+              dispatch({ type: "TODOS_SET_CALENDAR_OPEN", open })
+            }
           />
         </div>
-        <FooterHints kind={kind} />
+
+        {uiState.view === "search" && (
+          <FooterHints
+            kind={kind}
+            view={uiState.view}
+            todosMode={uiState.todos.mode}
+          />
+        )}
       </div>
     </LauncherShell>
   );

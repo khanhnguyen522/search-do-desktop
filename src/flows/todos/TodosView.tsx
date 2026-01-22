@@ -1,5 +1,6 @@
-import type { Workflow, TodoTab } from "../../app/engine";
 import { useEffect, useMemo, useRef } from "react";
+import type { Workflow, TodoTab, TodosMode } from "../../app/engine";
+import { MiniMonthCalendar } from "../../ui/MiniMonthCalendar";
 
 type Todo = Extract<Workflow, { type: "todo" }>;
 
@@ -9,7 +10,24 @@ type Props = {
   tagFilter: string | null;
   selectedIndex: number;
   onSelect: (index: number) => void;
+
+  mode: TodosMode;
+  selectedDayStartMs: number;
+
+  onSetMode: (mode: TodosMode) => void;
+  onShiftDay: (delta: number) => void;
+  onToday: () => void;
+  onSetDay: (dayStartMs: number) => void;
+
+  calendarOpen: boolean;
+  onSetCalendarOpen: (open: boolean) => void;
 };
+
+function startOfLocalDay(ts: number) {
+  const d = new Date(ts);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
 
 function uniqTags(todos: Todo[]) {
   const set = new Set<string>();
@@ -17,22 +35,113 @@ function uniqTags(todos: Todo[]) {
   return Array.from(set).sort((a, b) => a.localeCompare(b));
 }
 
-function TabChip({ active, label }: { active: boolean; label: string }) {
+function Chip({
+  active,
+  label,
+  onClick,
+  title,
+  compact,
+}: {
+  active: boolean;
+  label: string;
+  onClick?: () => void;
+  title?: string;
+  compact?: boolean;
+}) {
   return (
     <span
+      title={title}
+      onMouseDown={(e) => {
+        if (!onClick) return;
+        e.preventDefault();
+        onClick();
+      }}
       style={{
+        cursor: onClick ? "default" : "default",
         fontSize: 12,
-        padding: "4px 8px",
+        padding: compact ? "3px 8px" : "4px 10px",
         borderRadius: 999,
-        border: "1px solid rgba(255,255,255,0.12)",
-        background: active ? "rgba(255,255,255,0.10)" : "transparent",
-        opacity: active ? 1 : 0.65,
+        border: active
+          ? "1px solid rgba(255,255,255,0.22)"
+          : "1px solid rgba(255,255,255,0.12)",
+        background: active ? "rgba(255,255,255,0.12)" : "transparent",
+        opacity: active ? 1 : 0.6,
         userSelect: "none",
+        whiteSpace: "nowrap",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
       }}
     >
       {label}
     </span>
   );
+}
+
+function IconBtn({
+  label,
+  onClick,
+  title,
+}: {
+  label: string;
+  onClick: () => void;
+  title?: string;
+}) {
+  return (
+    <span
+      title={title}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        onClick();
+      }}
+      style={{
+        fontSize: 12,
+        padding: "4px 8px",
+        borderRadius: 10,
+        border: "1px solid rgba(255,255,255,0.12)",
+        background: "rgba(255,255,255,0.04)",
+        opacity: 0.9,
+        userSelect: "none",
+        whiteSpace: "nowrap",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minWidth: 28,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function toDateInputValue(dayStartMs: number) {
+  const d = new Date(dayStartMs);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const da = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${da}`;
+}
+
+function fromDateInputValue(v: string) {
+  const [y, m, d] = v.split("-").map(Number);
+  return new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+}
+
+function formatDayLabel(dayStartMs: number) {
+  const d = new Date(dayStartMs);
+  const weekday = d.toLocaleDateString(undefined, { weekday: "short" });
+  const month = d.toLocaleDateString(undefined, { month: "short" });
+  const day = d.getDate();
+  const year = d.getFullYear();
+  return `${weekday}, ${month} ${day}, ${year}`;
+}
+
+function ymdFromMs(dayStartMs: number) {
+  const d = new Date(dayStartMs);
+  const y = d.getFullYear();
+  const m = `${d.getMonth() + 1}`.padStart(2, "0");
+  const da = `${d.getDate()}`.padStart(2, "0");
+  return `${y}-${m}-${da}`;
 }
 
 export function TodosView({
@@ -41,14 +150,32 @@ export function TodosView({
   tagFilter,
   selectedIndex,
   onSelect,
+  mode,
+  selectedDayStartMs,
+  onSetMode,
+  onShiftDay,
+  onToday,
+  onSetDay,
+  calendarOpen,
+  onSetCalendarOpen,
 }: Props) {
   const tags = useMemo(() => uniqTags(todos), [todos]);
+
+  const dayCount = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const t of todos) {
+      if (t.status !== tab) continue;
+      if (typeof t.dueAt !== "number") continue;
+      const key = ymdFromMs(startOfLocalDay(t.dueAt));
+      map[key] = (map[key] ?? 0) + 1;
+    }
+    return map;
+  }, [todos, tab]);
 
   const filtered = useMemo(() => {
     return todos
       .filter((t) => t.status === tab)
-      .filter((t) => (tagFilter ? t.tags.includes(tagFilter) : true))
-      .sort((a, b) => b.createdAt - a.createdAt);
+      .filter((t) => (tagFilter ? t.tags.includes(tagFilter) : true));
   }, [todos, tab, tagFilter]);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -65,46 +192,186 @@ export function TodosView({
     el.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
-  const subLabel =
+  const tabLabel =
     tab === "active" ? "Active" : tab === "done" ? "Done" : "Archived";
 
+  const dayLabel = formatDayLabel(selectedDayStartMs);
+
+  const calendarWrapRef = useRef<HTMLDivElement>(null);
+  const listFocusRef = useRef<HTMLDivElement>(null);
+
+  function focusList() {
+    requestAnimationFrame(() => listFocusRef.current?.focus());
+  }
+
+  function openCalendar() {
+    if (mode !== "daily") return;
+    onSetCalendarOpen(true);
+  }
+
+  function closeCalendar() {
+    onSetCalendarOpen(false);
+    focusList();
+  }
+
+  // When calendar opens: focus wrapper
+  useEffect(() => {
+    if (!calendarOpen) return;
+    requestAnimationFrame(() => {
+      const a = document.activeElement as HTMLElement | null;
+      a?.blur?.();
+      calendarWrapRef.current?.focus({ preventScroll: true });
+    });
+  }, [calendarOpen]);
+
+  // If leave daily (Scheduled) => close calendar
+  useEffect(() => {
+    if (mode !== "daily" && calendarOpen) onSetCalendarOpen(false);
+  }, [mode, calendarOpen, onSetCalendarOpen]);
+
+  const showScheduledControls = mode === "daily";
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        minHeight: 0,
+        gap: 10,
+      }}
+    >
       <div
         style={{
+          border: "1px solid rgba(255,255,255,0.10)",
+          background: "rgba(255,255,255,0.04)",
+          borderRadius: 14,
+          padding: "10px 10px",
           display: "flex",
-          justifyContent: "space-between",
-          gap: 10,
-          alignItems: "center",
+          flexDirection: "column",
+          gap: 8,
         }}
       >
-        <div style={{ display: "flex", gap: 8 }}>
-          <TabChip active={tab === "active"} label="1 Active" />
-          <TabChip active={tab === "done"} label="2 Done" />
-          <TabChip active={tab === "archived"} label="3 Archived" />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+          }}
+        >
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <Chip
+              active={mode === "daily"}
+              label="Scheduled"
+              onClick={() => onSetMode("daily")}
+              title="Scheduled (Cmd/Ctrl+D)"
+            />
+            <Chip
+              active={mode === "occasional"}
+              label="Occasional"
+              onClick={() => onSetMode("occasional")}
+              title="Occasional (Cmd/Ctrl+O)"
+            />
+          </div>
+
+          <div
+            style={{
+              fontSize: 12,
+              opacity: 0.75,
+              userSelect: "none",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              maxWidth: "55%",
+              textAlign: "right",
+            }}
+            title={showScheduledControls ? dayLabel : "Occasional list"}
+          >
+            {showScheduledControls ? dayLabel : "Occasional list"}
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {tagFilter && (
-            <span
-              style={{
-                fontSize: 12,
-                padding: "4px 8px",
-                borderRadius: 999,
-                border: "1px solid rgba(255,255,255,0.12)",
-                background: "rgba(255,255,255,0.06)",
-                opacity: 0.9,
-                userSelect: "none",
-              }}
-              title="Filtered by tag"
-            >
-              #{tagFilter}
-            </span>
-          )}
-          <span style={{ fontSize: 12, opacity: 0.7, userSelect: "none" }}>
-            {filtered.length} {subLabel}
-          </span>
-        </div>
+
+        {showScheduledControls && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
+              <IconBtn
+                label="←"
+                onClick={() => onShiftDay(-1)}
+                title="Previous day (Cmd/Ctrl+←)"
+              />
+
+              <input
+                type="date"
+                value={toDateInputValue(selectedDayStartMs)}
+                onChange={(e) => onSetDay(fromDateInputValue(e.target.value))}
+                title="Jump to a date"
+                style={{
+                  fontSize: 12,
+                  padding: "4px 8px",
+                  borderRadius: 10,
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  background: "rgba(0,0,0,0.10)",
+                  color: "inherit",
+                  opacity: 0.95,
+                  width: 100,
+                }}
+              />
+
+              <IconBtn
+                label="→"
+                onClick={() => onShiftDay(1)}
+                title="Next day (Cmd/Ctrl+→)"
+              />
+              <Chip
+                compact
+                active={false}
+                label="Today"
+                onClick={onToday}
+                title="Jump to Today (Cmd/Ctrl+T)"
+              />
+              <Chip
+                compact
+                active={calendarOpen}
+                label="Calendar"
+                onClick={() =>
+                  calendarOpen ? closeCalendar() : openCalendar()
+                }
+                title="Toggle calendar (C / Cmd+Shift+O)"
+              />
+            </div>
+          </div>
+        )}
       </div>
+
+      {showScheduledControls && calendarOpen && (
+        <div
+          ref={calendarWrapRef}
+          tabIndex={0}
+          style={{ outline: "none" }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            requestAnimationFrame(() =>
+              calendarWrapRef.current?.focus({ preventScroll: true })
+            );
+          }}
+        >
+          <MiniMonthCalendar
+            selectedDayStartMs={selectedDayStartMs}
+            dayCount={dayCount}
+            onPickDayStartMs={onSetDay}
+            onRequestClose={closeCalendar}
+          />
+        </div>
+      )}
 
       {tags.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -116,6 +383,7 @@ export function TodosView({
               padding: "2px 8px",
               borderRadius: 999,
               userSelect: "none",
+              background: "rgba(255,255,255,0.03)",
             }}
             title="No tag filter"
           >
@@ -132,7 +400,10 @@ export function TodosView({
                 padding: "2px 8px",
                 borderRadius: 999,
                 userSelect: "none",
+                background:
+                  tagFilter === t ? "rgba(255,255,255,0.10)" : "transparent",
               }}
+              title={`#${t}`}
             >
               #{t}
             </span>
@@ -143,14 +414,20 @@ export function TodosView({
       <div
         ref={containerRef}
         style={{
-          maxHeight: 540,
+          flex: 1,
+          minHeight: 0,
           overflowY: "auto",
           paddingRight: 4,
         }}
+        onMouseDown={() => {
+          if (calendarOpen) onSetCalendarOpen(false);
+        }}
       >
+        <div ref={listFocusRef} tabIndex={0} style={{ outline: "none" }} />
+
         {filtered.length === 0 ? (
           <div style={{ opacity: 0.65 }}>
-            No todos in <b>{tab}</b>
+            No <b>{tab}</b> todos
           </div>
         ) : (
           filtered.map((t, i) => {
@@ -210,9 +487,42 @@ export function TodosView({
         )}
       </div>
 
-      <div style={{ fontSize: 11, opacity: 0.65, userSelect: "none" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <Chip active={tab === "active"} label="1 Active" />
+          <Chip active={tab === "done"} label="2 Done" />
+          <Chip active={tab === "archived"} label="3 Archived" />
+        </div>
+
+        <span style={{ fontSize: 12, opacity: 0.7, userSelect: "none" }}>
+          {filtered.length} {tabLabel}
+        </span>
+      </div>
+
+      <div
+        style={{
+          marginTop: "auto",
+          fontSize: 11,
+          opacity: 0.65,
+          userSelect: "none",
+          paddingTop: 6,
+        }}
+      >
         Enter: toggle • Cmd/Ctrl+A: archive • Cmd/Ctrl+⌫: delete • Tab: switch •
         Esc: back
+        {showScheduledControls
+          ? ` • Calendar: ${
+              calendarOpen ? "Esc to close" : "C / Cmd+Shift+O to open"
+            } • Cmd/Ctrl+←/→ • Cmd/Ctrl+T: Today`
+          : ""}
       </div>
     </div>
   );
