@@ -21,6 +21,7 @@ type Props = {
   onTodosToday: () => void;
   onTodosSetDay: (dayStartMs: number) => void;
   onTodosSetCalendarOpen: (open: boolean) => void;
+  onTodosSetTagFilter: (tag: string | null) => void; // ✅
 
   // leetcode
   lcItems: LcListItem[];
@@ -41,7 +42,6 @@ export function BodyRenderer({
   sections,
   onSelect,
   onRun,
-
   todos,
   onTodosSelect,
   onTodosSetMode,
@@ -49,7 +49,7 @@ export function BodyRenderer({
   onTodosToday,
   onTodosSetDay,
   onTodosSetCalendarOpen,
-
+  onTodosSetTagFilter,
   lcItems,
   lcTab,
   lcCategory,
@@ -78,8 +78,9 @@ export function BodyRenderer({
       return (
         <TodosView
           todos={todos}
-          tab={uiState.todos.tab}
+          tab={uiState.todos.tab} // kept for compatibility, but TodosView ignores it
           tagFilter={uiState.todos.tagFilter}
+          onSetTagFilter={onTodosSetTagFilter}
           selectedIndex={uiState.todos.selectedIndex}
           onSelect={onTodosSelect}
           mode={uiState.todos.mode}

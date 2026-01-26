@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import type { Workflow, TodoTab, TodosMode } from "../../app/engine";
 import { MiniMonthCalendar } from "../../ui/MiniMonthCalendar";
+import { theme, ui } from "../../ui/theme";
 
 type Todo = Extract<Workflow, { type: "todo" }>;
 
@@ -8,17 +9,15 @@ type Props = {
   todos: Todo[];
   tab: TodoTab;
   tagFilter: string | null;
+  onSetTagFilter: (tag: string | null) => void;
   selectedIndex: number;
   onSelect: (index: number) => void;
-
   mode: TodosMode;
   selectedDayStartMs: number;
-
   onSetMode: (mode: TodosMode) => void;
   onShiftDay: (delta: number) => void;
   onToday: () => void;
   onSetDay: (dayStartMs: number) => void;
-
   calendarOpen: boolean;
   onSetCalendarOpen: (open: boolean) => void;
 };
@@ -73,8 +72,6 @@ function Chip({
           : "transparent",
         opacity: active ? 0.95 : 0.55,
         fontWeight: active ? 600 : 520,
-        boxShadow: "none",
-        transform: "none",
         userSelect: "none",
         whiteSpace: "nowrap",
         display: "inline-flex",
@@ -155,8 +152,9 @@ function ymdFromMs(dayStartMs: number) {
 
 export function TodosView({
   todos,
-  tab,
+  tab: _tab, // kept for compatibility, unused
   tagFilter,
+  onSetTagFilter,
   selectedIndex,
   onSelect,
   mode,
@@ -169,23 +167,36 @@ export function TodosView({
   onSetCalendarOpen,
 }: Props) {
   const tags = useMemo(() => uniqTags(todos), [todos]);
-
   const dayCount = useMemo(() => {
     const map: Record<string, number> = {};
     for (const t of todos) {
-      if (t.status !== tab) continue;
       if (typeof t.dueAt !== "number") continue;
       const key = ymdFromMs(startOfLocalDay(t.dueAt));
       map[key] = (map[key] ?? 0) + 1;
     }
     return map;
-  }, [todos, tab]);
+  }, [todos]);
 
   const filtered = useMemo(() => {
-    return todos
-      .filter((t) => t.status === tab)
-      .filter((t) => (tagFilter ? t.tags.includes(tagFilter) : true));
-  }, [todos, tab, tagFilter]);
+    return todos.filter((t) => (tagFilter ? t.tags.includes(tagFilter) : true));
+  }, [todos, tagFilter]);
+
+  const sortedFiltered = useMemo(() => {
+    const rank = (s: Todo["status"]) =>
+      s === "active" ? 0 : s === "done" ? 1 : 2; // archived last (legacy)
+
+    return [...filtered].sort((a, b) => {
+      const ra = rank(a.status);
+      const rb = rank(b.status);
+      if (ra !== rb) return ra - rb;
+
+      const ca =
+        typeof (a as any).createdAt === "number" ? (a as any).createdAt : 0;
+      const cb =
+        typeof (b as any).createdAt === "number" ? (b as any).createdAt : 0;
+      return cb - ca;
+    });
+  }, [filtered]);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -200,9 +211,6 @@ export function TodosView({
     if (!el) return;
     el.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
-
-  const tabLabel =
-    tab === "active" ? "To-do" : tab === "done" ? "Done" : "Archived";
 
   const dayLabel = formatDayLabel(selectedDayStartMs);
 
@@ -238,12 +246,7 @@ export function TodosView({
 
   const showScheduledControls = mode === "daily";
 
-  const emptyMessage =
-    tab === "active"
-      ? "No to-dos. Create one with: t Buy milk"
-      : tab === "done"
-        ? "No done todos yet."
-        : "No archived todos.";
+  const emptyMessage = "No to-dos. Create one with: t Buy milk";
 
   const isSelectedToday =
     startOfLocalDay(selectedDayStartMs) === startOfLocalDay(Date.now());
@@ -361,7 +364,6 @@ export function TodosView({
                 onClick={() =>
                   calendarOpen ? closeCalendar() : openCalendar()
                 }
-                // ✅ tooltip khớp với App.tsx (Cmd/Ctrl+C)
                 title="Toggle calendar (Cmd/Ctrl+C)"
               />
             </div>
@@ -391,46 +393,59 @@ export function TodosView({
         </div>
       )}
 
-      {/* Tag chips */}
+      {/* Tag chips (clickable) */}
       {tags.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           <span
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onSetTagFilter(null);
+            }}
             style={{
+              cursor: "pointer",
               fontSize: 11,
-              opacity: tagFilter === null ? 0.9 : 0.5,
+              opacity: tagFilter === null ? 0.92 : 0.55,
               border: "1px solid rgba(255,255,255,0.10)",
               padding: "2px 8px",
               borderRadius: 999,
               userSelect: "none",
-              background: "rgba(255,255,255,0.02)",
+              background:
+                tagFilter === null ? "rgba(255,255,255,0.08)" : "transparent",
             }}
-            title="No tag filter"
+            title="Clear tag filter"
           >
             all
           </span>
 
-          {tags.map((t) => (
-            <span
-              key={t}
-              style={{
-                fontSize: 11,
-                opacity: tagFilter === t ? 0.92 : 0.5,
-                border: "1px solid rgba(255,255,255,0.10)",
-                padding: "2px 8px",
-                borderRadius: 999,
-                userSelect: "none",
-                background:
-                  tagFilter === t ? "rgba(255,255,255,0.08)" : "transparent",
-              }}
-              title={`#${t}`}
-            >
-              #{t}
-            </span>
-          ))}
+          {tags.map((t) => {
+            const active = tagFilter === t;
+            return (
+              <span
+                key={t}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onSetTagFilter(active ? null : t);
+                }}
+                style={{
+                  cursor: "pointer",
+                  fontSize: 11,
+                  opacity: active ? 0.92 : 0.55,
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  padding: "2px 8px",
+                  borderRadius: 999,
+                  userSelect: "none",
+                  background: active ? "rgba(255,255,255,0.08)" : "transparent",
+                }}
+                title={`Filter #${t}`}
+              >
+                #{t}
+              </span>
+            );
+          })}
         </div>
       )}
 
-      {/* Viewing banner */}
+      {/* Viewing banner (no tab) */}
       <div
         style={{
           display: "flex",
@@ -443,15 +458,16 @@ export function TodosView({
       >
         <div style={{ fontSize: 12, opacity: 0.8 }}>
           Viewing:{" "}
-          <span style={{ fontWeight: 750, opacity: 0.95 }}>{tabLabel}</span>
-          <span style={{ opacity: 0.65 }}>
-            {" "}
-            • {mode === "daily" ? "Scheduled" : "Occasional"}
+          <span style={{ fontWeight: 750, opacity: 0.95 }}>
+            {mode === "daily" ? "Scheduled" : "Occasional"}
           </span>
+          {tagFilter ? (
+            <span style={{ opacity: 0.65 }}> • #{tagFilter}</span>
+          ) : null}
         </div>
 
         <div style={{ fontSize: 12, opacity: 0.65 }}>
-          {filtered.length} item{filtered.length === 1 ? "" : "s"}
+          {sortedFiltered.length} item{sortedFiltered.length === 1 ? "" : "s"}
         </div>
       </div>
 
@@ -474,7 +490,7 @@ export function TodosView({
       >
         <div ref={listFocusRef} tabIndex={0} style={{ outline: "none" }} />
 
-        {filtered.length === 0 ? (
+        {sortedFiltered.length === 0 ? (
           <div
             style={{
               opacity: 0.7,
@@ -486,9 +502,12 @@ export function TodosView({
             {emptyMessage}
           </div>
         ) : (
-          filtered.map((t, i) => {
+          sortedFiltered.map((t, i) => {
             const selected = i === selectedIndex;
-            const isDone = t.status !== "active";
+
+            const isDone = t.status === "done";
+            const isArchived = t.status === "archived"; // legacy support
+            const symbol = isArchived ? "⧉" : isDone ? "✓" : "○";
 
             return (
               <div
@@ -516,7 +535,7 @@ export function TodosView({
                       fontWeight: 650,
                       fontSize: 13,
                       textDecoration: isDone ? "line-through" : "none",
-                      opacity: isDone ? 0.72 : 1,
+                      opacity: isDone || isArchived ? 0.72 : 1,
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -530,60 +549,27 @@ export function TodosView({
                   </div>
                 </div>
 
-                <div style={{ fontSize: 12, opacity: 0.75 }}>
-                  {t.status === "active"
-                    ? "○"
-                    : t.status === "done"
-                      ? "✓"
-                      : "⧉"}
-                </div>
+                <div style={{ fontSize: 12, opacity: 0.75 }}>{symbol}</div>
               </div>
             );
           })
         )}
       </div>
 
-      {/* Tabs row (subtle) */}
-      <div
-        style={{
-          display: "flex",
-          gap: 10,
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          border: "1px solid rgba(255,255,255,0.06)",
-          background: "rgba(255,255,255,0.02)",
-          borderRadius: 14,
-          padding: "8px 10px",
-        }}
-      >
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <Chip subtle active={tab === "active"} label="To-do" />
-          <Chip subtle active={tab === "done"} label="Done" />
-          <Chip subtle active={tab === "archived"} label="Archived" />
-        </div>
-
-        <span style={{ fontSize: 12, opacity: 0.65, userSelect: "none" }}>
-          {filtered.length} {tabLabel}
-        </span>
-      </div>
-
       {/* Footer */}
       <div
         style={{
           marginTop: "auto",
-          fontSize: 11,
-          opacity: 0.62,
+          fontSize: ui.hintSize,
+          color: theme.faint,
           userSelect: "none",
           paddingTop: 6,
         }}
       >
-        Enter Toggle • Cmd/Ctrl+Enter Open • Cmd/Ctrl+A Archive • Cmd/Ctrl+⌫
-        Delete • Tab Switch • Esc Back
+        Enter Toggle • Cmd/Ctrl+Enter Open • Cmd/Ctrl+⌫ Delete • Tab Switch •
+        Esc Back
         {showScheduledControls
-          ? ` • Calendar: ${
-              calendarOpen ? "Esc to close" : "Cmd/Ctrl+C to open"
-            } • Cmd/Ctrl+←/→ • Cmd/Ctrl+T Today`
+          ? ` • Calendar: ${calendarOpen ? "Esc to close" : "Cmd/Ctrl+C to open"} • Cmd/Ctrl+←/→ • Cmd/Ctrl+T Today`
           : ""}
       </div>
     </div>

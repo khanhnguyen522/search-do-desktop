@@ -1,3 +1,5 @@
+import { theme, ui } from "./theme";
+
 export function FooterHints({
   kind,
   view,
@@ -9,7 +11,13 @@ export function FooterHints({
 }) {
   if (view === "search") {
     return (
-      <div style={{ fontSize: 11, opacity: 0.7 }}>
+      <div
+        style={{
+          fontSize: ui.hintSize,
+          color: theme.faint,
+          userSelect: "none",
+        }}
+      >
         ↑/↓ Select · Enter Run · Tab Switch · Cmd+L Focus · Cmd+K Clear
         {kind === "command"
           ? " · / commands"
@@ -19,7 +27,9 @@ export function FooterHints({
   }
 
   return (
-    <div style={{ fontSize: 11, opacity: 0.7 }}>
+    <div
+      style={{ fontSize: ui.hintSize, color: theme.faint, userSelect: "none" }}
+    >
       ↑/↓ Select · Enter Toggle/Run · 1/2/3 Tabs · Cmd+A Archive · Cmd+⌫ Delete
       · Tab Switch · Esc Back
       {todosMode === "daily" ? " · Cmd+←/→ Day · Cmd+T Today" : ""}
