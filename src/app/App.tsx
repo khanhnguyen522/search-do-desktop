@@ -482,11 +482,6 @@ export default function App() {
     await runAction(w);
   }
 
-  async function runSelectedInTodosView() {
-    const todo = getSelectedTodo();
-    if (todo) await runTodo(todo);
-  }
-
   function getLcStatus(slug: string): "new" | "done" {
     return lcState.progress?.[slug]?.status === "done" ? "done" : "new";
   }
