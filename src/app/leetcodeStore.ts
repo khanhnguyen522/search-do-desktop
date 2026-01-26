@@ -36,25 +36,53 @@ export const defaultLcState: LcState = {
   progress: {},
 };
 
-function normalizeState(raw: any): LcState {
-  if (!raw || raw.version !== 1) return defaultLcState;
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function normalizeState(raw: unknown): LcState {
+  if (!isRecord(raw)) return defaultLcState;
+
+  const version = raw.version;
+  if (version !== 1) return defaultLcState;
+
+  const settingsRaw = isRecord(raw.settings) ? raw.settings : {};
+  const dailyNew =
+    typeof settingsRaw.dailyNew === "number" ? settingsRaw.dailyNew : undefined;
+
+  const progress = isRecord(raw.progress)
+    ? (raw.progress as Record<string, LcProgressItem>)
+    : defaultLcState.progress;
+
+  const tpRaw = raw.todayPlan;
+  const todayPlan: LcTodayPlan | undefined =
+    isRecord(tpRaw) &&
+    typeof tpRaw.ymd === "string" &&
+    Array.isArray(tpRaw.slugs) &&
+    tpRaw.slugs.every((x) => typeof x === "string")
+      ? { ymd: tpRaw.ymd, slugs: tpRaw.slugs }
+      : undefined;
+
+  const lastOpenedSlug =
+    typeof raw.lastOpenedSlug === "string" ? raw.lastOpenedSlug : undefined;
 
   return {
     ...defaultLcState,
-    ...raw,
+    version: 1,
     settings: {
       ...defaultLcState.settings,
-      ...(raw.settings ?? {}),
+      ...(dailyNew != null ? { dailyNew } : {}),
     },
-    progress: raw.progress ?? {},
-    todayPlan: raw.todayPlan,
+    progress,
+    lastOpenedSlug,
+    todayPlan,
   };
 }
 
 export async function loadLcState(): Promise<LcState> {
   try {
     const text = await readTextFile(FILE, { baseDir: BaseDirectory.AppData });
-    const data = JSON.parse(text);
+    const data: unknown = JSON.parse(text);
     return normalizeState(data);
   } catch {
     return defaultLcState;
