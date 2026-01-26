@@ -10,12 +10,15 @@ type Props = {
   tagFilter: string | null;
   selectedIndex: number;
   onSelect: (index: number) => void;
+
   mode: TodosMode;
   selectedDayStartMs: number;
+
   onSetMode: (mode: TodosMode) => void;
   onShiftDay: (delta: number) => void;
   onToday: () => void;
   onSetDay: (dayStartMs: number) => void;
+
   calendarOpen: boolean;
   onSetCalendarOpen: (open: boolean) => void;
 };
@@ -358,7 +361,8 @@ export function TodosView({
                 onClick={() =>
                   calendarOpen ? closeCalendar() : openCalendar()
                 }
-                title="Toggle calendar (C / Cmd+Shift+O)"
+                // ✅ tooltip khớp với App.tsx (Cmd/Ctrl+C)
+                title="Toggle calendar (Cmd/Ctrl+C)"
               />
             </div>
           </div>
@@ -574,11 +578,11 @@ export function TodosView({
           paddingTop: 6,
         }}
       >
-        Enter Toggle • Cmd/Ctrl+A Archive • Cmd/Ctrl+⌫ Delete • Tab Switch • Esc
-        Back
+        Enter Toggle • Cmd/Ctrl+Enter Open • Cmd/Ctrl+A Archive • Cmd/Ctrl+⌫
+        Delete • Tab Switch • Esc Back
         {showScheduledControls
           ? ` • Calendar: ${
-              calendarOpen ? "Esc to close" : "C / Cmd+Shift+O to open"
+              calendarOpen ? "Esc to close" : "Cmd/Ctrl+C to open"
             } • Cmd/Ctrl+←/→ • Cmd/Ctrl+T Today`
           : ""}
       </div>

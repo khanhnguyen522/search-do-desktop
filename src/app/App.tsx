@@ -140,11 +140,14 @@ function titleFromSlug(slug: string) {
 export default function App() {
   const staticWorkflows: Workflow[] = workflowsData as Workflow[];
   const [uiState, dispatch] = useReducer(reducer, initialState);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [todosQuery, setTodosQuery] = useState("");
   const [leetcodeQuery, setLeetcodeQuery] = useState("");
+
   const [todos, setTodos] = useState<TodoWorkflow[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
   const lcCatalog: LcProblem[] = lcCatalogData as unknown as LcProblem[];
   const [lcState, setLcState] = useState<LcState>(defaultLcState);
 
@@ -239,8 +242,9 @@ export default function App() {
     const out: SearchWorkflow[] = [];
     for (const s of sections) {
       for (const item of s.items) {
-        if (isSearchWorkflow(item as Workflow))
+        if (isSearchWorkflow(item as Workflow)) {
           out.push(item as SearchWorkflow);
+        }
       }
     }
     return out;
@@ -367,8 +371,10 @@ export default function App() {
     else await setTodoStatus(todo.id, "done");
   }
 
-  async function runTodo(todo: TodoWorkflow) {
-    if (todo.openApp || todo.url) {
+  async function runTodo(todo: TodoWorkflow, opts?: { open?: boolean }) {
+    const shouldOpen = opts?.open === true;
+
+    if (shouldOpen && (todo.openApp || todo.url)) {
       if (todo.openApp) {
         await openApp(todo.openApp);
         await sleep(todo.delayAfterOpenMs ?? 4000);
@@ -378,6 +384,7 @@ export default function App() {
       return;
     }
 
+    // default Enter behavior: toggle
     await toggleTodo(todo);
   }
 
@@ -475,11 +482,6 @@ export default function App() {
     await runAction(w);
   }
 
-  async function runSelectedInTodosView() {
-    const todo = getSelectedTodo();
-    if (todo) await runTodo(todo);
-  }
-
   function getLcStatus(slug: string): "new" | "done" {
     return lcState.progress?.[slug]?.status === "done" ? "done" : "new";
   }
@@ -532,6 +534,7 @@ export default function App() {
   }, [lcState, lcCatalog]);
 
   const planCount = todaySlugs.length;
+
   const doneTodaySlugs = useMemo(() => {
     const dayStart = startOfLocalDay(Date.now());
     const out: { slug: string; t: number }[] = [];
@@ -726,44 +729,6 @@ export default function App() {
     await persistLc(next);
   }
 
-  async function lcAddTodayToTodos() {
-    const slugs = lcItems
-      .map((x) => x.slug)
-      .filter((slug) => lcState.progress?.[slug]?.status !== "done");
-
-    if (slugs.length === 0) return;
-
-    const now = Date.now();
-    const newTodos: TodoWorkflow[] = slugs.map((slug, idx) => {
-      const p = lcCatalog.find((x) => x.slug === slug);
-      const cat = p?.category ?? "leetcode";
-      return {
-        id: `todo-lc-${now}-${idx}`,
-        type: "todo",
-        name: `[LC] ${titleFromSlug(slug)}`,
-        keywords: ["todo", "leetcode", cat],
-        description: `LeetCode • ${cat}`,
-        status: "active",
-        createdAt: now + idx,
-        tags: ["leetcode", cat],
-        dueAt:
-          uiState.view === "todos" && uiState.todos.mode === "daily"
-            ? uiState.todos.selectedDayStartMs
-            : undefined,
-        url: lcUrl(slug),
-        openApp: undefined,
-        delayAfterOpenMs: undefined,
-        durationMinutes: undefined,
-      };
-    });
-
-    await persist([...newTodos, ...todos]);
-
-    dispatch({ type: "GO_VIEW", view: "todos" });
-    dispatch({ type: "TODOS_SET_TAB", tab: "active" });
-    dispatch({ type: "TODOS_SET_SELECTION", index: 0 });
-  }
-
   async function onGlobalKeyDownCapture(
     e: React.KeyboardEvent<HTMLDivElement>
   ) {
@@ -810,6 +775,7 @@ export default function App() {
       dispatch({ type: "TODOS_SET_CALENDAR_OPEN", open: false });
       return;
     }
+
     if (uiState.view === "todos" && isCmdC) {
       e.preventDefault();
       if (uiState.todos.mode === "daily") {
@@ -837,10 +803,13 @@ export default function App() {
       return;
     }
 
+    // ✅ Decoupled: Cmd/Ctrl+T no longer bridges LeetCode -> Todos
     if (isCmdT) {
       if (uiState.view === "leetcode") {
         e.preventDefault();
-        await lcAddTodayToTodos();
+        // reasonable behavior: jump to Today tab
+        dispatch({ type: "LC_SET_TAB", tab: "today" });
+        dispatch({ type: "LC_SET_SELECTION", index: 0 });
         return;
       }
       if (inTodosDaily) {
@@ -982,7 +951,12 @@ export default function App() {
       }
 
       if (uiState.view === "todos") {
-        await runSelectedInTodosView();
+        const todo = getSelectedTodo();
+        if (!todo) return;
+
+        const wantOpen = isCmd; // Cmd/Ctrl + Enter
+        await runTodo(todo, { open: wantOpen });
+        return;
       } else if (uiState.view === "leetcode") {
         await lcOpenSelected();
       } else {
