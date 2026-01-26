@@ -152,7 +152,6 @@ function ymdFromMs(dayStartMs: number) {
 
 export function TodosView({
   todos,
-  tab: _tab, // kept for compatibility, unused
   tagFilter,
   onSetTagFilter,
   selectedIndex,
@@ -189,12 +188,7 @@ export function TodosView({
       const ra = rank(a.status);
       const rb = rank(b.status);
       if (ra !== rb) return ra - rb;
-
-      const ca =
-        typeof (a as any).createdAt === "number" ? (a as any).createdAt : 0;
-      const cb =
-        typeof (b as any).createdAt === "number" ? (b as any).createdAt : 0;
-      return cb - ca;
+      return b.createdAt - a.createdAt;
     });
   }, [filtered]);
 
