@@ -10,7 +10,7 @@ import { SearchBar } from "../ui/SearchBar";
 import { BodyRenderer } from "../ui/BodyRenderer";
 import { FooterHints } from "../ui/FooterHints";
 import { initialState, reducer } from "./engine";
-import type { Workflow, TodoStatus, UIState, TodoTab } from "./engine";
+import type { Workflow, TodoStatus, UIState } from "./engine";
 import type { Section } from "../flows/search/SearchResults";
 import { loadTodos, saveTodos, type TodoWorkflow } from "./todoStore";
 
@@ -94,14 +94,12 @@ function parseDueToken(token: string): number | undefined {
 
 function computeTodosFiltered(
   allTodos: TodoWorkflow[],
-  tab: TodoTab,
   tagFilter: string | null,
   searchText: string
 ): TodoWorkflow[] {
   const qRaw = searchText.trim().toLowerCase();
 
   return allTodos
-    .filter((t) => t.status === tab)
     .filter((t) => (tagFilter ? t.tags.includes(tagFilter) : true))
     .filter((t) => {
       if (!qRaw) return true;
@@ -264,7 +262,6 @@ export default function App() {
   const todosFiltered: TodoWorkflow[] = useMemo(() => {
     const base = computeTodosFiltered(
       todos,
-      uiState.todos.tab,
       uiState.todos.tagFilter,
       todosQuery
     );
@@ -288,7 +285,6 @@ export default function App() {
       });
   }, [
     todos,
-    uiState.todos.tab,
     uiState.todos.tagFilter,
     uiState.todos.mode,
     uiState.todos.selectedDayStartMs,
@@ -384,7 +380,6 @@ export default function App() {
       return;
     }
 
-    // default Enter behavior: toggle
     await toggleTodo(todo);
   }
 
@@ -455,7 +450,6 @@ export default function App() {
     setTodosQuery("");
     setLeetcodeQuery("");
 
-    dispatch({ type: "TODOS_SET_TAB", tab: "active" });
     if (dueAt != null) dispatch({ type: "TODOS_SET_MODE", mode: "daily" });
 
     if (uiState.view !== "todos") {
@@ -737,7 +731,6 @@ export default function App() {
 
     const isCmdL = isCmd && key === "l";
     const isCmdK = isCmd && key === "k";
-    const isArchiveShortcut = isCmd && key === "a";
     const isCmdD = isCmd && key === "d";
     const isCmdO = isCmd && key === "o";
     const isCmdC = isCmd && key === "c";
@@ -803,11 +796,9 @@ export default function App() {
       return;
     }
 
-    // ✅ Decoupled: Cmd/Ctrl+T no longer bridges LeetCode -> Todos
     if (isCmdT) {
       if (uiState.view === "leetcode") {
         e.preventDefault();
-        // reasonable behavior: jump to Today tab
         dispatch({ type: "LC_SET_TAB", tab: "today" });
         dispatch({ type: "LC_SET_SELECTION", index: 0 });
         return;
@@ -851,30 +842,6 @@ export default function App() {
       dispatch({ type: "SET_SELECTION", index: 0 });
       dispatch({ type: "TODOS_SET_SELECTION", index: 0 });
       dispatch({ type: "LC_SET_SELECTION", index: 0 });
-      return;
-    }
-
-    if (e.key === "1" || e.key === "2" || e.key === "3") {
-      if (uiState.view === "search" && searchQuery.trim().length > 0) return;
-      if (uiState.view !== "todos") return;
-
-      e.preventDefault();
-      dispatch({
-        type: "TODOS_SET_TAB",
-        tab: e.key === "1" ? "active" : e.key === "2" ? "done" : "archived",
-      });
-      return;
-    }
-
-    if (uiState.view === "todos" && isArchiveShortcut) {
-      e.preventDefault();
-      const todo = getSelectedTodo();
-      if (!todo) return;
-
-      await setTodoStatus(
-        todo.id,
-        todo.status === "archived" ? "active" : "archived"
-      );
       return;
     }
 
@@ -1062,6 +1029,10 @@ export default function App() {
             onTodosSetDay={(dayStartMs) =>
               dispatch({ type: "TODOS_SET_DAY", dayStartMs })
             }
+            onTodosSetTagFilter={(tag) => {
+              dispatch({ type: "TODOS_SET_TAG_FILTER", tag });
+              dispatch({ type: "TODOS_SET_SELECTION", index: 0 });
+            }}
             onTodosSetCalendarOpen={(open) =>
               dispatch({ type: "TODOS_SET_CALENDAR_OPEN", open })
             }
