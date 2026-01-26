@@ -23,8 +23,8 @@ export type TodoWorkflow = {
   durationMinutes?: number;
 };
 
-const DIR = "search-do"; // thư mục trong AppData
-const FILE = `${DIR}/todos.json`; // file trong AppData
+const DIR = "search-do";
+const FILE = `${DIR}/todos.json`;
 
 export async function loadTodos(): Promise<TodoWorkflow[]> {
   try {
@@ -32,7 +32,6 @@ export async function loadTodos(): Promise<TodoWorkflow[]> {
     const data = JSON.parse(text);
     return Array.isArray(data) ? (data as TodoWorkflow[]) : [];
   } catch (err) {
-    // lần đầu chưa có file là bình thường
     console.debug("loadTodos:", err);
     return [];
   }
@@ -40,15 +39,12 @@ export async function loadTodos(): Promise<TodoWorkflow[]> {
 
 export async function saveTodos(todos: TodoWorkflow[]) {
   try {
-    // đảm bảo folder tồn tại
     await mkdir(DIR, { baseDir: BaseDirectory.AppData, recursive: true });
-
     const text = JSON.stringify(todos, null, 2);
     await writeTextFile(FILE, text, { baseDir: BaseDirectory.AppData });
-
-    console.log("✅ saved todos to AppData:", FILE);
+    console.log("saved todos to AppData:", FILE);
   } catch (err) {
-    console.error("❌ saveTodos failed:", err);
+    console.error("saveTodos failed:", err);
     throw err;
   }
 }

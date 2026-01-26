@@ -1,4 +1,4 @@
-export type View = "search" | "todos";
+export type View = "search" | "todos" | "leetcode";
 
 export type CommandAction = { action: "GO_VIEW"; view: View };
 
@@ -6,6 +6,8 @@ export type TodoStatus = "active" | "done" | "archived";
 export type TodoTab = TodoStatus;
 
 export type TodosMode = "daily" | "occasional";
+
+export type LeetCodeTab = "today" | "category" | "random";
 
 export type Workflow =
   | {
@@ -56,9 +58,14 @@ export type UIState = {
     selectedIndex: number;
     tagFilter: string | null;
 
-    mode: TodosMode; // daily | occasional
+    mode: TodosMode;
     selectedDayStartMs: number;
     calendarOpen: boolean;
+  };
+  leetcode: {
+    tab: LeetCodeTab;
+    selectedIndex: number;
+    category: string;
   };
 };
 
@@ -77,7 +84,11 @@ export type Event =
   | { type: "TODOS_SHIFT_DAY"; delta: number }
   | { type: "TODOS_TODAY" }
   | { type: "TODOS_TOGGLE_CALENDAR" }
-  | { type: "TODOS_SET_CALENDAR_OPEN"; open: boolean };
+  | { type: "TODOS_SET_CALENDAR_OPEN"; open: boolean }
+  | { type: "LC_SET_TAB"; tab: LeetCodeTab }
+  | { type: "LC_SET_CATEGORY"; category: string }
+  | { type: "LC_SET_SELECTION"; index: number }
+  | { type: "LC_MOVE_SELECTION"; delta: number; max: number };
 
 function startOfLocalDay(ts: number) {
   const d = new Date(ts);
@@ -103,16 +114,17 @@ export const initialState: UIState = {
     selectedDayStartMs: startOfLocalDay(Date.now()),
     calendarOpen: false,
   },
+  leetcode: {
+    tab: "today",
+    selectedIndex: 0,
+    category: "array",
+  },
 };
 
 export function reducer(state: UIState, ev: Event): UIState {
   switch (ev.type) {
     case "QUERY_KIND_CHANGED":
-      return {
-        ...state,
-        search: { kind: ev.kind },
-        selectedIndex: 0,
-      };
+      return { ...state, search: { kind: ev.kind }, selectedIndex: 0 };
 
     case "MOVE_SELECTION": {
       const maxIndex = Math.max(0, ev.max - 1);
@@ -135,6 +147,10 @@ export function reducer(state: UIState, ev: Event): UIState {
           ev.view === "todos"
             ? { ...state.todos, selectedIndex: 0 }
             : state.todos,
+        leetcode:
+          ev.view === "leetcode"
+            ? { ...state.leetcode, selectedIndex: 0 }
+            : state.leetcode,
       };
 
     case "RUN_COMMAND": {
@@ -148,6 +164,10 @@ export function reducer(state: UIState, ev: Event): UIState {
             cmd.view === "todos"
               ? { ...state.todos, selectedIndex: 0 }
               : state.todos,
+          leetcode:
+            cmd.view === "leetcode"
+              ? { ...state.leetcode, selectedIndex: 0 }
+              : state.leetcode,
         };
       }
       return state;
@@ -242,6 +262,38 @@ export function reducer(state: UIState, ev: Event): UIState {
           calendarOpen: state.todos.mode === "daily" ? ev.open : false,
         },
       };
+
+    // ✅ LeetCode
+    case "LC_SET_TAB":
+      return {
+        ...state,
+        leetcode: { ...state.leetcode, tab: ev.tab, selectedIndex: 0 },
+      };
+
+    case "LC_SET_CATEGORY":
+      return {
+        ...state,
+        leetcode: {
+          ...state.leetcode,
+          category: ev.category,
+          selectedIndex: 0,
+        },
+      };
+
+    case "LC_SET_SELECTION":
+      return {
+        ...state,
+        leetcode: { ...state.leetcode, selectedIndex: Math.max(0, ev.index) },
+      };
+
+    case "LC_MOVE_SELECTION": {
+      const maxIndex = Math.max(0, ev.max - 1);
+      const next = Math.min(
+        maxIndex,
+        Math.max(0, state.leetcode.selectedIndex + ev.delta)
+      );
+      return { ...state, leetcode: { ...state.leetcode, selectedIndex: next } };
+    }
 
     default:
       return state;

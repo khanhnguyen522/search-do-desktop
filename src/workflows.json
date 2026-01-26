@@ -16,6 +16,14 @@
     "command": { "action": "GO_VIEW", "view": "todos" }
   },
   {
+    "id": "cmd-leetcode",
+    "type": "command",
+    "name": "/leetcode",
+    "keywords": ["leetcode", "lc", "practice"],
+    "description": "Open LeetCode view",
+    "command": { "action": "GO_VIEW", "view": "leetcode" }
+  },
+  {
     "id": "open-lc-problems",
     "type": "action",
     "name": "Open LeetCode Problemset",

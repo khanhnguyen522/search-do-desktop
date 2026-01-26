@@ -10,15 +10,12 @@ type Props = {
   tagFilter: string | null;
   selectedIndex: number;
   onSelect: (index: number) => void;
-
   mode: TodosMode;
   selectedDayStartMs: number;
-
   onSetMode: (mode: TodosMode) => void;
   onShiftDay: (delta: number) => void;
   onToday: () => void;
   onSetDay: (dayStartMs: number) => void;
-
   calendarOpen: boolean;
   onSetCalendarOpen: (open: boolean) => void;
 };
@@ -245,7 +242,6 @@ export function TodosView({
         ? "No done todos yet."
         : "No archived todos.";
 
-  // ✅ highlight Today chip when selected day is today
   const isSelectedToday =
     startOfLocalDay(selectedDayStartMs) === startOfLocalDay(Date.now());
 
@@ -345,7 +341,6 @@ export function TodosView({
                 title="Next day (Cmd/Ctrl+→)"
               />
 
-              {/* ✅ now Today gets the same “active” emphasis when selected day = today */}
               <Chip
                 subtle
                 compact
