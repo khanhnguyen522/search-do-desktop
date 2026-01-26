@@ -2,10 +2,7 @@ import React, { useMemo, useState } from "react";
 
 type Props = {
   selectedDayStartMs: number;
-
-  // map YYYY-MM-DD -> count todos
   dayCount: Record<string, number>;
-
   onPickDayStartMs: (dayStartMs: number) => void;
   onRequestClose?: () => void;
 };
@@ -31,7 +28,6 @@ function ymdLocal(ts: number) {
   return `${y}-${m}-${da}`;
 }
 
-// start of week (Sunday)
 function startOfWeekLocal(dayStartMs: number) {
   const d = new Date(dayStartMs);
   const dow = d.getDay(); // 0=Sun
@@ -86,8 +82,6 @@ export const MiniMonthCalendar = React.forwardRef<HTMLDivElement, Props>(
   ) {
     const selectedStart = startOfLocalDay(selectedDayStartMs);
     const todayStart = startOfLocalDay(Date.now());
-
-    // ✅ local UI state: month/week toggle
     const [view, setView] = useState<"month" | "week">("week");
 
     const monthStart = useMemo(() => {
@@ -228,7 +222,6 @@ export const MiniMonthCalendar = React.forwardRef<HTMLDivElement, Props>(
       const isSelected = startOfLocalDay(ts) === selectedStart;
       const isToday = startOfLocalDay(ts) === todayStart;
 
-      // ✅ Today nổi bật hơn (nhưng vẫn nhường ưu tiên selected)
       const border = isSelected
         ? "1px solid rgba(255,255,255,0.30)"
         : isToday

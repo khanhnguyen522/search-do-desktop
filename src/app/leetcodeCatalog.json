@@ -1,0 +1,61 @@
+[
+  { "slug": "two-sum", "category": "array" },
+  { "slug": "best-time-to-buy-and-sell-stock", "category": "array" },
+  { "slug": "contains-duplicate", "category": "array" },
+  { "slug": "product-of-array-except-self", "category": "array" },
+  { "slug": "maximum-subarray", "category": "array" },
+  { "slug": "maximum-product-subarray", "category": "array" },
+
+  { "slug": "valid-anagram", "category": "hashmap" },
+  { "slug": "group-anagrams", "category": "hashmap" },
+  { "slug": "two-sum-ii-input-array-is-sorted", "category": "hashmap" },
+  { "slug": "top-k-frequent-elements", "category": "hashmap" },
+
+  { "slug": "valid-parentheses", "category": "stack" },
+  { "slug": "min-stack", "category": "stack" },
+  { "slug": "evaluate-reverse-polish-notation", "category": "stack" },
+
+  { "slug": "binary-search", "category": "binary-search" },
+  { "slug": "search-in-rotated-sorted-array", "category": "binary-search" },
+  {
+    "slug": "find-minimum-in-rotated-sorted-array",
+    "category": "binary-search"
+  },
+
+  { "slug": "merge-two-sorted-lists", "category": "linked-list" },
+  { "slug": "reverse-linked-list", "category": "linked-list" },
+  { "slug": "linked-list-cycle", "category": "linked-list" },
+  { "slug": "reorder-list", "category": "linked-list" },
+
+  { "slug": "invert-binary-tree", "category": "tree" },
+  { "slug": "maximum-depth-of-binary-tree", "category": "tree" },
+  { "slug": "same-tree", "category": "tree" },
+  { "slug": "subtree-of-another-tree", "category": "tree" },
+
+  { "slug": "number-of-islands", "category": "graph" },
+  { "slug": "clone-graph", "category": "graph" },
+  { "slug": "course-schedule", "category": "graph" },
+
+  { "slug": "climbing-stairs", "category": "dp" },
+  { "slug": "house-robber", "category": "dp" },
+  { "slug": "coin-change", "category": "dp" },
+
+  { "slug": "3sum", "category": "two-pointers" },
+  { "slug": "container-with-most-water", "category": "two-pointers" },
+  { "slug": "trapping-rain-water", "category": "two-pointers" },
+
+  { "slug": "kth-largest-element-in-an-array", "category": "heap" },
+  { "slug": "find-median-from-data-stream", "category": "heap" },
+
+  { "slug": "merge-intervals", "category": "intervals" },
+  { "slug": "insert-interval", "category": "intervals" },
+
+  { "slug": "subsets", "category": "backtracking" },
+  { "slug": "combination-sum", "category": "backtracking" },
+
+  {
+    "slug": "longest-substring-without-repeating-characters",
+    "category": "sliding-window"
+  },
+  { "slug": "minimum-window-substring", "category": "sliding-window" }
+]

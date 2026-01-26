@@ -14,6 +14,19 @@ import type { Workflow, TodoStatus, UIState, TodoTab } from "./engine";
 import type { Section } from "../flows/search/SearchResults";
 import { loadTodos, saveTodos, type TodoWorkflow } from "./todoStore";
 
+import lcCatalogData from "./leetcodeCatalog.json";
+import {
+  loadLcState,
+  saveLcState,
+  defaultLcState,
+  type LcState,
+} from "./leetcodeStore";
+import type {
+  LcListItem,
+  LcProblem,
+  LcCategoryStat,
+} from "../flows/leetcode/LeetCodeView";
+
 type SearchWorkflow = Extract<Workflow, { type: "command" | "action" }>;
 
 function isSearchWorkflow(w: Workflow): w is SearchWorkflow {
@@ -44,6 +57,14 @@ function addDaysLocal(ts: number, days: number) {
   const d = new Date(ts);
   d.setDate(d.getDate() + days);
   return d.getTime();
+}
+
+function ymdLocal(ts: number) {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const da = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${da}`;
 }
 
 function parseDueToken(token: string): number | undefined {
@@ -105,15 +126,34 @@ function computeTodosFiltered(
     .sort((a, b) => b.createdAt - a.createdAt);
 }
 
+function lcUrl(slug: string) {
+  return `https://leetcode.com/problems/${slug}/description/`;
+}
+
+function titleFromSlug(slug: string) {
+  return slug
+    .split("-")
+    .map((x) => (x ? x[0].toUpperCase() + x.slice(1) : x))
+    .join(" ");
+}
+
 export default function App() {
   const staticWorkflows: Workflow[] = workflowsData as Workflow[];
   const [uiState, dispatch] = useReducer(reducer, initialState);
   const [searchQuery, setSearchQuery] = useState("");
   const [todosQuery, setTodosQuery] = useState("");
+  const [leetcodeQuery, setLeetcodeQuery] = useState("");
   const [todos, setTodos] = useState<TodoWorkflow[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const lcCatalog: LcProblem[] = lcCatalogData as unknown as LcProblem[];
+  const [lcState, setLcState] = useState<LcState>(defaultLcState);
 
-  const activeQuery = uiState.view === "todos" ? todosQuery : searchQuery;
+  const activeQuery =
+    uiState.view === "todos"
+      ? todosQuery
+      : uiState.view === "leetcode"
+        ? leetcodeQuery
+        : searchQuery;
 
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const kind: "command" | "filter" = searchQuery.trim().startsWith("/")
@@ -128,6 +168,17 @@ export default function App() {
         setTodos(t);
       } catch (err) {
         console.debug("loadTodos failed:", err);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const s = await loadLcState();
+        setLcState(s);
+      } catch (err) {
+        console.debug("loadLcState failed:", err);
       }
     })();
   }, []);
@@ -266,6 +317,15 @@ export default function App() {
     }
   }
 
+  async function persistLc(next: LcState) {
+    setLcState(next);
+    try {
+      await saveLcState(next);
+    } catch (err) {
+      console.debug("saveLcState failed:", err);
+    }
+  }
+
   async function runAction(w: Extract<Workflow, { type: "action" }>) {
     if (w.openApp) {
       await openApp(w.openApp);
@@ -386,9 +446,9 @@ export default function App() {
 
     setSearchQuery("");
     setTodosQuery("");
+    setLeetcodeQuery("");
 
     dispatch({ type: "TODOS_SET_TAB", tab: "active" });
-
     if (dueAt != null) dispatch({ type: "TODOS_SET_MODE", mode: "daily" });
 
     if (uiState.view !== "todos") {
@@ -420,6 +480,290 @@ export default function App() {
     if (todo) await runTodo(todo);
   }
 
+  function getLcStatus(slug: string): "new" | "done" {
+    return lcState.progress?.[slug]?.status === "done" ? "done" : "new";
+  }
+
+  function generateTodayPlanSlugs(
+    state: LcState,
+    catalog: LcProblem[]
+  ): string[] {
+    const dailyNew = state.settings?.dailyNew ?? 2;
+    const out: string[] = [];
+    for (const p of catalog) {
+      if (out.length >= dailyNew) break;
+      const done = state.progress?.[p.slug]?.status === "done";
+      if (done) continue;
+      out.push(p.slug);
+    }
+    return out;
+  }
+
+  function ensureTodayPlan(state: LcState, catalog: LcProblem[]): LcState {
+    const todayYmd = ymdLocal(Date.now());
+    const hasToday = state.todayPlan?.ymd === todayYmd;
+
+    if (hasToday && (state.todayPlan?.slugs?.length ?? 0) > 0) return state;
+
+    const slugs = generateTodayPlanSlugs(state, catalog);
+    return { ...state, todayPlan: { ymd: todayYmd, slugs } };
+  }
+
+  useEffect(() => {
+    if (!lcCatalog || lcCatalog.length === 0) return;
+
+    const next = ensureTodayPlan(lcState, lcCatalog);
+
+    const changed =
+      next.todayPlan?.ymd !== lcState.todayPlan?.ymd ||
+      JSON.stringify(next.todayPlan?.slugs ?? []) !==
+        JSON.stringify(lcState.todayPlan?.slugs ?? []);
+
+    if (!changed) return;
+
+    (async () => {
+      await persistLc(next);
+    })();
+  }, [lcCatalog.length, lcState.todayPlan?.ymd]);
+
+  const todaySlugs = useMemo(() => {
+    const fixed = ensureTodayPlan(lcState, lcCatalog);
+    return fixed.todayPlan?.slugs ?? [];
+  }, [lcState, lcCatalog]);
+
+  const planCount = todaySlugs.length;
+  const doneTodaySlugs = useMemo(() => {
+    const dayStart = startOfLocalDay(Date.now());
+    const out: { slug: string; t: number }[] = [];
+
+    const progress = lcState.progress ?? {};
+    for (const slug of Object.keys(progress)) {
+      const p = progress[slug];
+      if (!p) continue;
+      if (p.status !== "done") continue;
+
+      const t = p.lastSolvedAt;
+      if (typeof t !== "number") continue;
+
+      if (t >= dayStart && t < addDaysLocal(dayStart, 1)) {
+        out.push({ slug, t });
+      }
+    }
+
+    out.sort((a, b) => b.t - a.t);
+    return out.map((x) => x.slug);
+  }, [lcState]);
+
+  const lcTodayDone = useMemo(() => doneTodaySlugs.length, [doneTodaySlugs]);
+
+  const lcTodayTotal = useMemo(() => {
+    return Math.max(planCount, lcTodayDone);
+  }, [planCount, lcTodayDone]);
+
+  function pickRandomSlug(state: LcState): string | null {
+    const candidates = lcCatalog.filter(
+      (p) => state.progress?.[p.slug]?.status !== "done"
+    );
+    if (candidates.length === 0) return null;
+    const idx = Math.floor(Math.random() * candidates.length);
+    return candidates[idx]!.slug;
+  }
+
+  const lcCategoryStats: LcCategoryStat[] = useMemo(() => {
+    const map = new Map<string, { total: number; done: number }>();
+
+    for (const p of lcCatalog) {
+      const key = p.category || "other";
+      const cur = map.get(key) ?? { total: 0, done: 0 };
+      cur.total += 1;
+
+      const st = lcState.progress?.[p.slug]?.status;
+      if (st === "done") cur.done += 1;
+
+      map.set(key, cur);
+    }
+
+    const out: LcCategoryStat[] = Array.from(map.entries()).map(([key, v]) => ({
+      key,
+      total: v.total,
+      done: v.done,
+      pct: v.total === 0 ? 0 : v.done / v.total,
+    }));
+
+    out.sort((a, b) => {
+      const ra = a.total - a.done;
+      const rb = b.total - b.done;
+      if (ra !== rb) return rb - ra;
+      return a.key.localeCompare(b.key);
+    });
+
+    return out;
+  }, [lcCatalog, lcState]);
+
+  const lcItems: LcListItem[] = useMemo(() => {
+    if (uiState.view !== "leetcode") return [];
+
+    const tab = uiState.leetcode.tab;
+    const q = leetcodeQuery.trim().toLowerCase();
+
+    let base: LcProblem[] = lcCatalog;
+
+    if (tab === "today") {
+      const planSet = new Set(todaySlugs);
+
+      const plan = todaySlugs
+        .map((slug) => lcCatalog.find((p) => p.slug === slug))
+        .filter(Boolean) as LcProblem[];
+
+      const bonusSlots =
+        lcTodayDone >= planCount ? Math.max(1, lcTodayDone - planCount + 1) : 0;
+
+      if (bonusSlots <= 0) {
+        base = plan;
+      } else {
+        const bonusDoneToday = doneTodaySlugs
+          .filter((slug) => !planSet.has(slug))
+          .map((slug) => lcCatalog.find((p) => p.slug === slug))
+          .filter(Boolean) as LcProblem[];
+
+        const chosenBonus: LcProblem[] = [];
+        for (const p of bonusDoneToday) {
+          if (chosenBonus.length >= bonusSlots) break;
+          chosenBonus.push(p);
+        }
+        if (chosenBonus.length < bonusSlots) {
+          const chosenSet = new Set(chosenBonus.map((x) => x.slug));
+
+          const bonusNew = lcCatalog
+            .filter((p) => !planSet.has(p.slug))
+            .filter((p) => !chosenSet.has(p.slug))
+            .filter((p) => lcState.progress?.[p.slug]?.status !== "done")
+            .slice(0, bonusSlots - chosenBonus.length);
+
+          chosenBonus.push(...bonusNew);
+        }
+
+        base = [...plan, ...chosenBonus];
+      }
+    } else if (tab === "category") {
+      base = lcCatalog.filter((p) => p.category === uiState.leetcode.category);
+    } else if (tab === "random") {
+      const r = pickRandomSlug(lcState);
+      base = r ? lcCatalog.filter((p) => p.slug === r) : [];
+    }
+
+    if (q) {
+      base = base.filter((p) => {
+        const title = titleFromSlug(p.slug).toLowerCase();
+        return (
+          p.slug.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q) ||
+          title.includes(q)
+        );
+      });
+    }
+
+    return base.map((p) => ({
+      slug: p.slug,
+      category: p.category,
+      title: titleFromSlug(p.slug),
+      url: lcUrl(p.slug),
+      status: getLcStatus(p.slug),
+    }));
+  }, [
+    uiState.view,
+    uiState.leetcode.tab,
+    uiState.leetcode.category,
+    leetcodeQuery,
+    lcCatalog,
+    lcState,
+    todaySlugs,
+    doneTodaySlugs,
+    planCount,
+    lcTodayDone,
+  ]);
+
+  const safeLcIndex = Math.min(
+    uiState.leetcode.selectedIndex,
+    Math.max(0, lcItems.length - 1)
+  );
+
+  function getSelectedLc(): LcListItem | null {
+    return lcItems[safeLcIndex] ?? null;
+  }
+
+  async function lcOpenSelected() {
+    const it = getSelectedLc();
+    if (!it) return;
+
+    await openUrl(it.url);
+    await hideLauncher();
+
+    await persistLc({ ...lcState, lastOpenedSlug: it.slug });
+  }
+
+  async function lcMarkDoneSelected() {
+    const it = getSelectedLc();
+    if (!it) return;
+
+    const now = Date.now();
+    const prev = lcState.progress?.[it.slug];
+    const solvedCount = (prev?.solvedCount ?? 0) + 1;
+
+    const next: LcState = {
+      ...lcState,
+      progress: {
+        ...lcState.progress,
+        [it.slug]: {
+          slug: it.slug,
+          status: "done",
+          solvedCount,
+          lastSolvedAt: now,
+        },
+      },
+    };
+
+    await persistLc(next);
+  }
+
+  async function lcAddTodayToTodos() {
+    const slugs = lcItems
+      .map((x) => x.slug)
+      .filter((slug) => lcState.progress?.[slug]?.status !== "done");
+
+    if (slugs.length === 0) return;
+
+    const now = Date.now();
+    const newTodos: TodoWorkflow[] = slugs.map((slug, idx) => {
+      const p = lcCatalog.find((x) => x.slug === slug);
+      const cat = p?.category ?? "leetcode";
+      return {
+        id: `todo-lc-${now}-${idx}`,
+        type: "todo",
+        name: `[LC] ${titleFromSlug(slug)}`,
+        keywords: ["todo", "leetcode", cat],
+        description: `LeetCode • ${cat}`,
+        status: "active",
+        createdAt: now + idx,
+        tags: ["leetcode", cat],
+        dueAt:
+          uiState.view === "todos" && uiState.todos.mode === "daily"
+            ? uiState.todos.selectedDayStartMs
+            : undefined,
+        url: lcUrl(slug),
+        openApp: undefined,
+        delayAfterOpenMs: undefined,
+        durationMinutes: undefined,
+      };
+    });
+
+    await persist([...newTodos, ...todos]);
+
+    dispatch({ type: "GO_VIEW", view: "todos" });
+    dispatch({ type: "TODOS_SET_TAB", tab: "active" });
+    dispatch({ type: "TODOS_SET_SELECTION", index: 0 });
+  }
+
   async function onGlobalKeyDownCapture(
     e: React.KeyboardEvent<HTMLDivElement>
   ) {
@@ -432,11 +776,11 @@ export default function App() {
     const isCmdD = isCmd && key === "d";
     const isCmdO = isCmd && key === "o";
     const isCmdC = isCmd && key === "c";
+    const isCmdT = isCmd && key === "t";
 
     const isDeleteShortcut = isCmd && e.key === "Backspace";
     const isCmdArrowLeft = isCmd && e.key === "ArrowLeft";
     const isCmdArrowRight = isCmd && e.key === "ArrowRight";
-    const isCmdT = isCmd && key === "t";
     const isEsc = e.key === "Escape";
 
     const inTodosDaily =
@@ -461,14 +805,11 @@ export default function App() {
       }
     }
 
-    // Esc closes calendar first
     if (inTodosDaily && uiState.todos.calendarOpen && isEsc) {
       e.preventDefault();
       dispatch({ type: "TODOS_SET_CALENDAR_OPEN", open: false });
       return;
     }
-
-    // Toggle calendar
     if (uiState.view === "todos" && isCmdC) {
       e.preventDefault();
       if (uiState.todos.mode === "daily") {
@@ -477,11 +818,17 @@ export default function App() {
       return;
     }
 
-    // Scheduled / Occasional
-    if (uiState.view === "todos" && isCmdD) {
-      e.preventDefault();
-      dispatch({ type: "TODOS_SET_MODE", mode: "daily" });
-      return;
+    if (isCmdD) {
+      if (uiState.view === "leetcode") {
+        e.preventDefault();
+        await lcMarkDoneSelected();
+        return;
+      }
+      if (uiState.view === "todos") {
+        e.preventDefault();
+        dispatch({ type: "TODOS_SET_MODE", mode: "daily" });
+        return;
+      }
     }
 
     if (uiState.view === "todos" && isCmdO) {
@@ -490,13 +837,29 @@ export default function App() {
       return;
     }
 
-    // Tab switch view
+    if (isCmdT) {
+      if (uiState.view === "leetcode") {
+        e.preventDefault();
+        await lcAddTodayToTodos();
+        return;
+      }
+      if (inTodosDaily) {
+        e.preventDefault();
+        dispatch({ type: "TODOS_TODAY" });
+        return;
+      }
+    }
+
     if (e.key === "Tab") {
       e.preventDefault();
-      dispatch({
-        type: "GO_VIEW",
-        view: uiState.view === "todos" ? "search" : "todos",
-      });
+      const next =
+        uiState.view === "search"
+          ? "todos"
+          : uiState.view === "todos"
+            ? "leetcode"
+            : "search";
+
+      dispatch({ type: "GO_VIEW", view: next });
       requestAnimationFrame(() => {
         searchInputRef.current?.focus();
         searchInputRef.current?.select();
@@ -515,14 +878,16 @@ export default function App() {
       e.preventDefault();
       setSearchQuery("");
       setTodosQuery("");
+      setLeetcodeQuery("");
       dispatch({ type: "SET_SELECTION", index: 0 });
       dispatch({ type: "TODOS_SET_SELECTION", index: 0 });
+      dispatch({ type: "LC_SET_SELECTION", index: 0 });
       return;
     }
 
-    // 1/2/3 tabs
     if (e.key === "1" || e.key === "2" || e.key === "3") {
       if (uiState.view === "search" && searchQuery.trim().length > 0) return;
+      if (uiState.view !== "todos") return;
 
       e.preventDefault();
       dispatch({
@@ -532,7 +897,6 @@ export default function App() {
       return;
     }
 
-    // Archive/Unarchive
     if (uiState.view === "todos" && isArchiveShortcut) {
       e.preventDefault();
       const todo = getSelectedTodo();
@@ -545,7 +909,6 @@ export default function App() {
       return;
     }
 
-    // Delete
     if (uiState.view === "todos" && isDeleteShortcut) {
       e.preventDefault();
       const todo = getSelectedTodo();
@@ -555,7 +918,6 @@ export default function App() {
       return;
     }
 
-    // Daily day navigation (Cmd+←/→, Cmd+T)
     if (inTodosDaily) {
       if (isCmdArrowLeft) {
         e.preventDefault();
@@ -567,42 +929,46 @@ export default function App() {
         dispatch({ type: "TODOS_SHIFT_DAY", delta: 1 });
         return;
       }
-      if (isCmdT) {
-        e.preventDefault();
-        dispatch({ type: "TODOS_TODAY" });
-        return;
-      }
     }
 
-    // arrows for selection (only if calendar NOT open)
-    if (!(inTodosDaily && uiState.todos.calendarOpen)) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        if (uiState.view === "todos") {
-          dispatch({
-            type: "TODOS_MOVE_SELECTION",
-            delta: 1,
-            max: todosFiltered.length,
-          });
-        } else {
-          dispatch({ type: "MOVE_SELECTION", delta: 1, max: totalItems });
-        }
-        return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (uiState.view === "todos") {
+        dispatch({
+          type: "TODOS_MOVE_SELECTION",
+          delta: 1,
+          max: todosFiltered.length,
+        });
+      } else if (uiState.view === "leetcode") {
+        dispatch({
+          type: "LC_MOVE_SELECTION",
+          delta: 1,
+          max: lcItems.length,
+        });
+      } else {
+        dispatch({ type: "MOVE_SELECTION", delta: 1, max: totalItems });
       }
+      return;
+    }
 
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        if (uiState.view === "todos") {
-          dispatch({
-            type: "TODOS_MOVE_SELECTION",
-            delta: -1,
-            max: todosFiltered.length,
-          });
-        } else {
-          dispatch({ type: "MOVE_SELECTION", delta: -1, max: totalItems });
-        }
-        return;
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (uiState.view === "todos") {
+        dispatch({
+          type: "TODOS_MOVE_SELECTION",
+          delta: -1,
+          max: todosFiltered.length,
+        });
+      } else if (uiState.view === "leetcode") {
+        dispatch({
+          type: "LC_MOVE_SELECTION",
+          delta: -1,
+          max: lcItems.length,
+        });
+      } else {
+        dispatch({ type: "MOVE_SELECTION", delta: -1, max: totalItems });
       }
+      return;
     }
 
     if (e.key === "Enter") {
@@ -617,6 +983,8 @@ export default function App() {
 
       if (uiState.view === "todos") {
         await runSelectedInTodosView();
+      } else if (uiState.view === "leetcode") {
+        await lcOpenSelected();
       } else {
         await runByIndex(safeSelectedIndex);
       }
@@ -626,7 +994,7 @@ export default function App() {
     if (isEsc) {
       e.preventDefault();
 
-      if (uiState.view === "todos") {
+      if (uiState.view === "todos" || uiState.view === "leetcode") {
         dispatch({ type: "GO_VIEW", view: "search" });
         dispatch({ type: "SET_SELECTION", index: 0 });
         requestAnimationFrame(() => {
@@ -641,6 +1009,13 @@ export default function App() {
     }
   }
 
+  const title =
+    uiState.view === "todos"
+      ? "Todos"
+      : uiState.view === "leetcode"
+        ? "LeetCode"
+        : "Search";
+
   return (
     <LauncherShell>
       <div
@@ -654,7 +1029,7 @@ export default function App() {
         }}
       >
         <Header>
-          <AppTitle modeTitle={uiState.view === "todos" ? "Todos" : "Search"} />
+          <AppTitle modeTitle={title} />
 
           <SearchBar
             inputRef={searchInputRef}
@@ -663,6 +1038,9 @@ export default function App() {
               if (uiState.view === "todos") {
                 setTodosQuery(text);
                 dispatch({ type: "TODOS_SET_SELECTION", index: 0 });
+              } else if (uiState.view === "leetcode") {
+                setLeetcodeQuery(text);
+                dispatch({ type: "LC_SET_SELECTION", index: 0 });
               } else {
                 setSearchQuery(text);
                 dispatch({ type: "SET_SELECTION", index: 0 });
@@ -671,10 +1049,12 @@ export default function App() {
             onKeyDown={() => {}}
             placeholder={
               uiState.view === "todos"
-                ? "Search todos… (#tag) • Tab switch"
-                : kind === "command"
-                  ? "Type /command…"
-                  : 'Search… or "t <todo>"'
+                ? "Search todos… (#tag)"
+                : uiState.view === "leetcode"
+                  ? "Search title / slug / category…"
+                  : kind === "command"
+                    ? "Type /command…"
+                    : 'Search… or "t <todo>"'
             }
           />
         </Header>
@@ -710,6 +1090,20 @@ export default function App() {
             }
             onTodosSetCalendarOpen={(open) =>
               dispatch({ type: "TODOS_SET_CALENDAR_OPEN", open })
+            }
+            lcItems={lcItems}
+            lcTab={uiState.leetcode.tab}
+            lcCategory={uiState.leetcode.category}
+            lcCategories={lcCategoryStats}
+            lcSelectedIndex={uiState.leetcode.selectedIndex}
+            lcTodayTotal={lcTodayTotal}
+            lcTodayDone={lcTodayDone}
+            onLcSelect={(idx) =>
+              dispatch({ type: "LC_SET_SELECTION", index: idx })
+            }
+            onLcSetTab={(tab) => dispatch({ type: "LC_SET_TAB", tab })}
+            onLcSetCategory={(category) =>
+              dispatch({ type: "LC_SET_CATEGORY", category })
             }
           />
         </div>
