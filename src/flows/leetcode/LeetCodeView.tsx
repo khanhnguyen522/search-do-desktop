@@ -404,6 +404,7 @@ function DiffBadge({ d }: { d: LcDifficulty }) {
 
 type HeaderStats = { label: string; pct: number; showBar: boolean };
 type LcPanel = "problems" | "stats";
+type HeatRange = "6m" | "12m";
 
 export function LeetCodeView({
   tab,
@@ -423,9 +424,8 @@ export function LeetCodeView({
   const listRef = useRef<HTMLDivElement>(null);
   const [categoryPicking, setCategoryPicking] = useState(true);
   const [panel, setPanel] = useState<LcPanel>("problems");
-  const [heatRange, setHeatRange] = useState<"6m" | "12m">("12m");
+  const [heatRange, setHeatRange] = useState<HeatRange>("12m");
 
-  // ✅ FIX: always resolve status from statusBySlug if provided
   const resolvedItems: LcListItem[] = useMemo(() => {
     if (!statusBySlug) return items;
     return items.map((it) => {
@@ -789,7 +789,11 @@ export function LeetCodeView({
 
                 <select
                   value={heatRange}
-                  onChange={(e) => setHeatRange(e.target.value as any)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    const next: HeatRange = v === "6m" ? "6m" : "12m";
+                    setHeatRange(next);
+                  }}
                   style={{
                     fontSize: 11,
                     fontWeight: 750,
