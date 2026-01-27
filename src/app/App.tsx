@@ -21,10 +21,13 @@ import {
   defaultLcState,
   type LcState,
 } from "./leetcodeStore";
+
 import type {
   LcListItem,
   LcProblem,
   LcCategoryStat,
+  LcDashboard,
+  LcDifficulty,
 } from "../flows/leetcode/LeetCodeView";
 
 type SearchWorkflow = Extract<Workflow, { type: "command" | "action" }>;
@@ -56,6 +59,7 @@ function startOfLocalDay(ts: number) {
 function addDaysLocal(ts: number, days: number) {
   const d = new Date(ts);
   d.setDate(d.getDate() + days);
+  d.setHours(0, 0, 0, 0);
   return d.getTime();
 }
 
@@ -551,6 +555,24 @@ export default function App() {
     return out.map((x) => x.slug);
   }, [lcState]);
 
+  function buildLcCountByYmd(state: LcState) {
+    const out: Record<string, number> = {};
+    const progress = state.progress ?? {};
+    for (const slug of Object.keys(progress)) {
+      const p = progress[slug];
+      if (!p) continue;
+      if (p.status !== "done") continue;
+      const t = p.lastSolvedAt;
+      if (typeof t !== "number") continue;
+
+      const key = ymdLocal(t);
+      out[key] = (out[key] ?? 0) + 1;
+    }
+    return out;
+  }
+
+  const lcCountByYmd = useMemo(() => buildLcCountByYmd(lcState), [lcState]);
+
   const lcTodayDone = useMemo(() => doneTodaySlugs.length, [doneTodaySlugs]);
 
   const lcTodayTotal = useMemo(() => {
@@ -597,6 +619,109 @@ export default function App() {
     return out;
   }, [lcCatalog, lcState]);
 
+  function monthStartLocal(ts: number) {
+    const d = new Date(ts);
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }
+
+  function computeStreakFromMap(map: Record<string, number>): {
+    current: number;
+    best: number;
+  } {
+    let current = 0;
+    let t = startOfLocalDay(Date.now());
+    while (true) {
+      const key = ymdLocal(t);
+      const n = map[key] ?? 0;
+      if (n <= 0) break;
+      current += 1;
+      t = addDaysLocal(t, -1);
+    }
+
+    const days = Object.keys(map)
+      .filter((k) => (map[k] ?? 0) > 0)
+      .sort();
+
+    let best = 0;
+    let run = 0;
+
+    function ymdToMs(ymd: string) {
+      const [y, m, d] = ymd.split("-").map(Number);
+      const dt = new Date(y, (m ?? 1) - 1, d ?? 1, 0, 0, 0, 0);
+      return dt.getTime();
+    }
+
+    for (let i = 0; i < days.length; i++) {
+      const cur = days[i]!;
+      if (i === 0) {
+        run = 1;
+        best = Math.max(best, run);
+        continue;
+      }
+      const prev = days[i - 1]!;
+      const gap = (ymdToMs(cur) - ymdToMs(prev)) / (24 * 3600 * 1000);
+      if (gap === 1) run += 1;
+      else run = 1;
+      best = Math.max(best, run);
+    }
+
+    return { current, best };
+  }
+
+  const lcDashboard: LcDashboard = useMemo(() => {
+    const totalByDiff: Record<LcDifficulty, number> = {
+      easy: 0,
+      medium: 0,
+      hard: 0,
+    };
+    const doneByDiff: Record<LcDifficulty, number> = {
+      easy: 0,
+      medium: 0,
+      hard: 0,
+    };
+
+    for (const p of lcCatalog) {
+      const diff = (p.difficulty ?? "easy") as LcDifficulty;
+      totalByDiff[diff] += 1;
+      if (lcState.progress?.[p.slug]?.status === "done") {
+        doneByDiff[diff] += 1;
+      }
+    }
+
+    const total = lcCatalog.length;
+    const done =
+      (doneByDiff.easy ?? 0) +
+      (doneByDiff.medium ?? 0) +
+      (doneByDiff.hard ?? 0);
+
+    const solvedCountByYmd: Record<string, number> = {};
+    const progress = lcState.progress ?? {};
+    for (const slug of Object.keys(progress)) {
+      const it = progress[slug];
+      if (!it || it.status !== "done") continue;
+      const t = it.lastSolvedAt;
+      if (typeof t !== "number") continue;
+      const key = ymdLocal(t);
+      solvedCountByYmd[key] = (solvedCountByYmd[key] ?? 0) + 1;
+    }
+
+    const { current, best } = computeStreakFromMap(solvedCountByYmd);
+
+    return {
+      total,
+      done,
+      pct: total ? done / total : 0,
+      totalByDiff,
+      doneByDiff,
+      solvedCountByYmd,
+      monthStartMs: monthStartLocal(Date.now()),
+      currentStreak: current,
+      bestStreak: best,
+    };
+  }, [lcCatalog, lcState]);
+
   const lcItems: LcListItem[] = useMemo(() => {
     if (uiState.view !== "leetcode") return [];
 
@@ -628,6 +753,7 @@ export default function App() {
           if (chosenBonus.length >= bonusSlots) break;
           chosenBonus.push(p);
         }
+
         if (chosenBonus.length < bonusSlots) {
           const chosenSet = new Set(chosenBonus.map((x) => x.slug));
 
@@ -663,6 +789,7 @@ export default function App() {
     return base.map((p) => ({
       slug: p.slug,
       category: p.category,
+      difficulty: (p.difficulty ?? "easy") as LcDifficulty,
       title: titleFromSlug(p.slug),
       url: lcUrl(p.slug),
       status: getLcStatus(p.slug),
@@ -695,7 +822,6 @@ export default function App() {
 
     await openUrl(it.url);
     await hideLauncher();
-
     await persistLc({ ...lcState, lastOpenedSlug: it.slug });
   }
 
@@ -921,7 +1047,7 @@ export default function App() {
         const todo = getSelectedTodo();
         if (!todo) return;
 
-        const wantOpen = isCmd; // Cmd/Ctrl + Enter
+        const wantOpen = isCmd;
         await runTodo(todo, { open: wantOpen });
         return;
       } else if (uiState.view === "leetcode") {
@@ -1041,8 +1167,10 @@ export default function App() {
             lcCategory={uiState.leetcode.category}
             lcCategories={lcCategoryStats}
             lcSelectedIndex={uiState.leetcode.selectedIndex}
+            lcDashboard={lcDashboard}
             lcTodayTotal={lcTodayTotal}
             lcTodayDone={lcTodayDone}
+            lcCountByYmd={lcCountByYmd}
             onLcSelect={(idx) =>
               dispatch({ type: "LC_SET_SELECTION", index: idx })
             }

@@ -5,6 +5,7 @@ import {
   LeetCodeView,
   type LcListItem,
   type LcCategoryStat,
+  type LcDashboard,
 } from "../flows/leetcode/LeetCodeView";
 
 type Props = {
@@ -21,7 +22,7 @@ type Props = {
   onTodosToday: () => void;
   onTodosSetDay: (dayStartMs: number) => void;
   onTodosSetCalendarOpen: (open: boolean) => void;
-  onTodosSetTagFilter: (tag: string | null) => void; // ✅
+  onTodosSetTagFilter: (tag: string | null) => void;
 
   // leetcode
   lcItems: LcListItem[];
@@ -31,6 +32,8 @@ type Props = {
   lcSelectedIndex: number;
   lcTodayTotal: number;
   lcTodayDone: number;
+  lcDashboard: LcDashboard;
+  lcCountByYmd: Record<string, number>;
 
   onLcSelect: (index: number) => void;
   onLcSetTab: (tab: UIState["leetcode"]["tab"]) => void;
@@ -60,6 +63,8 @@ export function BodyRenderer({
   onLcSelect,
   onLcSetTab,
   onLcSetCategory,
+  lcDashboard,
+  lcCountByYmd,
 }: Props) {
   switch (uiState.view) {
     case "search":
@@ -107,6 +112,8 @@ export function BodyRenderer({
           onSelect={onLcSelect}
           todayTotal={lcTodayTotal}
           todayDone={lcTodayDone}
+          dashboard={lcDashboard}
+          countByYmd={lcCountByYmd}
         />
       );
 

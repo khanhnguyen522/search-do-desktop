@@ -1,61 +1,637 @@
 [
-  { "slug": "two-sum", "category": "array" },
-  { "slug": "best-time-to-buy-and-sell-stock", "category": "array" },
-  { "slug": "contains-duplicate", "category": "array" },
-  { "slug": "product-of-array-except-self", "category": "array" },
-  { "slug": "maximum-subarray", "category": "array" },
-  { "slug": "maximum-product-subarray", "category": "array" },
-
-  { "slug": "valid-anagram", "category": "hashmap" },
-  { "slug": "group-anagrams", "category": "hashmap" },
-  { "slug": "two-sum-ii-input-array-is-sorted", "category": "hashmap" },
-  { "slug": "top-k-frequent-elements", "category": "hashmap" },
-
-  { "slug": "valid-parentheses", "category": "stack" },
-  { "slug": "min-stack", "category": "stack" },
-  { "slug": "evaluate-reverse-polish-notation", "category": "stack" },
-
-  { "slug": "binary-search", "category": "binary-search" },
-  { "slug": "search-in-rotated-sorted-array", "category": "binary-search" },
   {
-    "slug": "find-minimum-in-rotated-sorted-array",
-    "category": "binary-search"
+    "slug": "contains-duplicate",
+    "category": "arrays-hashing",
+    "difficulty": "easy"
+  },
+  {
+    "slug": "valid-anagram",
+    "category": "arrays-hashing",
+    "difficulty": "easy"
+  },
+  { "slug": "two-sum", "category": "arrays-hashing", "difficulty": "easy" },
+  {
+    "slug": "group-anagrams",
+    "category": "arrays-hashing",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "top-k-frequent-elements",
+    "category": "arrays-hashing",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "encode-and-decode-strings",
+    "category": "arrays-hashing",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "product-of-array-except-self",
+    "category": "arrays-hashing",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "valid-sudoku",
+    "category": "arrays-hashing",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "longest-consecutive-sequence",
+    "category": "arrays-hashing",
+    "difficulty": "medium"
   },
 
-  { "slug": "merge-two-sorted-lists", "category": "linked-list" },
-  { "slug": "reverse-linked-list", "category": "linked-list" },
-  { "slug": "linked-list-cycle", "category": "linked-list" },
-  { "slug": "reorder-list", "category": "linked-list" },
+  {
+    "slug": "valid-palindrome",
+    "category": "two-pointers",
+    "difficulty": "easy"
+  },
+  {
+    "slug": "two-sum-ii-input-array-is-sorted",
+    "category": "two-pointers",
+    "difficulty": "medium"
+  },
+  { "slug": "3sum", "category": "two-pointers", "difficulty": "medium" },
+  {
+    "slug": "container-with-most-water",
+    "category": "two-pointers",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "trapping-rain-water",
+    "category": "two-pointers",
+    "difficulty": "hard"
+  },
 
-  { "slug": "invert-binary-tree", "category": "tree" },
-  { "slug": "maximum-depth-of-binary-tree", "category": "tree" },
-  { "slug": "same-tree", "category": "tree" },
-  { "slug": "subtree-of-another-tree", "category": "tree" },
-
-  { "slug": "number-of-islands", "category": "graph" },
-  { "slug": "clone-graph", "category": "graph" },
-  { "slug": "course-schedule", "category": "graph" },
-
-  { "slug": "climbing-stairs", "category": "dp" },
-  { "slug": "house-robber", "category": "dp" },
-  { "slug": "coin-change", "category": "dp" },
-
-  { "slug": "3sum", "category": "two-pointers" },
-  { "slug": "container-with-most-water", "category": "two-pointers" },
-  { "slug": "trapping-rain-water", "category": "two-pointers" },
-
-  { "slug": "kth-largest-element-in-an-array", "category": "heap" },
-  { "slug": "find-median-from-data-stream", "category": "heap" },
-
-  { "slug": "merge-intervals", "category": "intervals" },
-  { "slug": "insert-interval", "category": "intervals" },
-
-  { "slug": "subsets", "category": "backtracking" },
-  { "slug": "combination-sum", "category": "backtracking" },
-
+  {
+    "slug": "best-time-to-buy-and-sell-stock",
+    "category": "sliding-window",
+    "difficulty": "easy"
+  },
   {
     "slug": "longest-substring-without-repeating-characters",
-    "category": "sliding-window"
+    "category": "sliding-window",
+    "difficulty": "medium"
   },
-  { "slug": "minimum-window-substring", "category": "sliding-window" }
+  {
+    "slug": "longest-repeating-character-replacement",
+    "category": "sliding-window",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "permutation-in-string",
+    "category": "sliding-window",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "minimum-window-substring",
+    "category": "sliding-window",
+    "difficulty": "hard"
+  },
+  {
+    "slug": "sliding-window-maximum",
+    "category": "sliding-window",
+    "difficulty": "hard"
+  },
+
+  { "slug": "valid-parentheses", "category": "stack", "difficulty": "easy" },
+  { "slug": "min-stack", "category": "stack", "difficulty": "medium" },
+  {
+    "slug": "evaluate-reverse-polish-notation",
+    "category": "stack",
+    "difficulty": "medium"
+  },
+  { "slug": "daily-temperatures", "category": "stack", "difficulty": "medium" },
+  { "slug": "car-fleet", "category": "stack", "difficulty": "medium" },
+  {
+    "slug": "largest-rectangle-in-histogram",
+    "category": "stack",
+    "difficulty": "hard"
+  },
+
+  {
+    "slug": "binary-search",
+    "category": "binary-search",
+    "difficulty": "easy"
+  },
+  {
+    "slug": "search-a-2d-matrix",
+    "category": "binary-search",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "koko-eating-bananas",
+    "category": "binary-search",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "find-minimum-in-rotated-sorted-array",
+    "category": "binary-search",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "search-in-rotated-sorted-array",
+    "category": "binary-search",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "time-based-key-value-store",
+    "category": "binary-search",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "median-of-two-sorted-arrays",
+    "category": "binary-search",
+    "difficulty": "hard"
+  },
+
+  {
+    "slug": "reverse-linked-list",
+    "category": "linked-list",
+    "difficulty": "easy"
+  },
+  {
+    "slug": "merge-two-sorted-lists",
+    "category": "linked-list",
+    "difficulty": "easy"
+  },
+  {
+    "slug": "linked-list-cycle",
+    "category": "linked-list",
+    "difficulty": "easy"
+  },
+  { "slug": "reorder-list", "category": "linked-list", "difficulty": "medium" },
+  {
+    "slug": "remove-nth-node-from-end-of-list",
+    "category": "linked-list",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "copy-list-with-random-pointer",
+    "category": "linked-list",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "add-two-numbers",
+    "category": "linked-list",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "find-the-duplicate-number",
+    "category": "linked-list",
+    "difficulty": "medium"
+  },
+  { "slug": "lru-cache", "category": "linked-list", "difficulty": "medium" },
+  {
+    "slug": "merge-k-sorted-lists",
+    "category": "linked-list",
+    "difficulty": "hard"
+  },
+  {
+    "slug": "reverse-nodes-in-k-group",
+    "category": "linked-list",
+    "difficulty": "hard"
+  },
+
+  { "slug": "invert-binary-tree", "category": "trees", "difficulty": "easy" },
+  {
+    "slug": "maximum-depth-of-binary-tree",
+    "category": "trees",
+    "difficulty": "easy"
+  },
+  {
+    "slug": "diameter-of-binary-tree",
+    "category": "trees",
+    "difficulty": "easy"
+  },
+  { "slug": "balanced-binary-tree", "category": "trees", "difficulty": "easy" },
+  { "slug": "same-tree", "category": "trees", "difficulty": "easy" },
+  {
+    "slug": "subtree-of-another-tree",
+    "category": "trees",
+    "difficulty": "easy"
+  },
+  {
+    "slug": "lowest-common-ancestor-of-a-binary-search-tree",
+    "category": "trees",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "binary-tree-level-order-traversal",
+    "category": "trees",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "binary-tree-right-side-view",
+    "category": "trees",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "count-good-nodes-in-binary-tree",
+    "category": "trees",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "validate-binary-search-tree",
+    "category": "trees",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "kth-smallest-element-in-a-bst",
+    "category": "trees",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "construct-binary-tree-from-preorder-and-inorder-traversal",
+    "category": "trees",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "binary-tree-maximum-path-sum",
+    "category": "trees",
+    "difficulty": "hard"
+  },
+  {
+    "slug": "serialize-and-deserialize-binary-tree",
+    "category": "trees",
+    "difficulty": "hard"
+  },
+
+  {
+    "slug": "kth-largest-element-in-a-stream",
+    "category": "heap-priority-queue",
+    "difficulty": "easy"
+  },
+  {
+    "slug": "last-stone-weight",
+    "category": "heap-priority-queue",
+    "difficulty": "easy"
+  },
+  {
+    "slug": "k-closest-points-to-origin",
+    "category": "heap-priority-queue",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "kth-largest-element-in-an-array",
+    "category": "heap-priority-queue",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "task-scheduler",
+    "category": "heap-priority-queue",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "design-twitter",
+    "category": "heap-priority-queue",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "find-median-from-data-stream",
+    "category": "heap-priority-queue",
+    "difficulty": "hard"
+  },
+
+  { "slug": "subsets", "category": "backtracking", "difficulty": "medium" },
+  {
+    "slug": "combination-sum",
+    "category": "backtracking",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "combination-sum-ii",
+    "category": "backtracking",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "permutations",
+    "category": "backtracking",
+    "difficulty": "medium"
+  },
+  { "slug": "subsets-ii", "category": "backtracking", "difficulty": "medium" },
+  {
+    "slug": "generate-parentheses",
+    "category": "backtracking",
+    "difficulty": "medium"
+  },
+  { "slug": "word-search", "category": "backtracking", "difficulty": "medium" },
+  {
+    "slug": "palindrome-partitioning",
+    "category": "backtracking",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "letter-combinations-of-a-phone-number",
+    "category": "backtracking",
+    "difficulty": "medium"
+  },
+  { "slug": "n-queens", "category": "backtracking", "difficulty": "hard" },
+
+  {
+    "slug": "implement-trie-prefix-tree",
+    "category": "tries",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "design-add-and-search-words-data-structure",
+    "category": "tries",
+    "difficulty": "medium"
+  },
+  { "slug": "word-search-ii", "category": "tries", "difficulty": "hard" },
+
+  { "slug": "number-of-islands", "category": "graphs", "difficulty": "medium" },
+  {
+    "slug": "max-area-of-island",
+    "category": "graphs",
+    "difficulty": "medium"
+  },
+  { "slug": "clone-graph", "category": "graphs", "difficulty": "medium" },
+  { "slug": "walls-and-gates", "category": "graphs", "difficulty": "medium" },
+  { "slug": "rotting-oranges", "category": "graphs", "difficulty": "medium" },
+  {
+    "slug": "pacific-atlantic-water-flow",
+    "category": "graphs",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "surrounded-regions",
+    "category": "graphs",
+    "difficulty": "medium"
+  },
+  { "slug": "course-schedule", "category": "graphs", "difficulty": "medium" },
+  {
+    "slug": "course-schedule-ii",
+    "category": "graphs",
+    "difficulty": "medium"
+  },
+  { "slug": "graph-valid-tree", "category": "graphs", "difficulty": "medium" },
+  {
+    "slug": "number-of-connected-components-in-an-undirected-graph",
+    "category": "graphs",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "redundant-connection",
+    "category": "graphs",
+    "difficulty": "medium"
+  },
+  { "slug": "word-ladder", "category": "graphs", "difficulty": "hard" },
+
+  {
+    "slug": "network-delay-time",
+    "category": "advanced-graphs",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "reconstruct-itinerary",
+    "category": "advanced-graphs",
+    "difficulty": "hard"
+  },
+  {
+    "slug": "min-cost-to-connect-all-points",
+    "category": "advanced-graphs",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "swim-in-rising-water",
+    "category": "advanced-graphs",
+    "difficulty": "hard"
+  },
+  {
+    "slug": "alien-dictionary",
+    "category": "advanced-graphs",
+    "difficulty": "hard"
+  },
+  {
+    "slug": "cheapest-flights-within-k-stops",
+    "category": "advanced-graphs",
+    "difficulty": "medium"
+  },
+
+  {
+    "slug": "climbing-stairs",
+    "category": "1d-dynamic-programming",
+    "difficulty": "easy"
+  },
+  {
+    "slug": "min-cost-climbing-stairs",
+    "category": "1d-dynamic-programming",
+    "difficulty": "easy"
+  },
+  {
+    "slug": "house-robber",
+    "category": "1d-dynamic-programming",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "house-robber-ii",
+    "category": "1d-dynamic-programming",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "longest-palindromic-substring",
+    "category": "1d-dynamic-programming",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "palindromic-substrings",
+    "category": "1d-dynamic-programming",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "decode-ways",
+    "category": "1d-dynamic-programming",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "coin-change",
+    "category": "1d-dynamic-programming",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "maximum-product-subarray",
+    "category": "1d-dynamic-programming",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "word-break",
+    "category": "1d-dynamic-programming",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "longest-increasing-subsequence",
+    "category": "1d-dynamic-programming",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "partition-equal-subset-sum",
+    "category": "1d-dynamic-programming",
+    "difficulty": "medium"
+  },
+
+  {
+    "slug": "unique-paths",
+    "category": "2d-dynamic-programming",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "longest-common-subsequence",
+    "category": "2d-dynamic-programming",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "best-time-to-buy-and-sell-stock-with-cooldown",
+    "category": "2d-dynamic-programming",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "coin-change-ii",
+    "category": "2d-dynamic-programming",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "target-sum",
+    "category": "2d-dynamic-programming",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "interleaving-string",
+    "category": "2d-dynamic-programming",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "longest-increasing-path-in-a-matrix",
+    "category": "2d-dynamic-programming",
+    "difficulty": "hard"
+  },
+  {
+    "slug": "distinct-subsequences",
+    "category": "2d-dynamic-programming",
+    "difficulty": "hard"
+  },
+  {
+    "slug": "edit-distance",
+    "category": "2d-dynamic-programming",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "burst-balloons",
+    "category": "2d-dynamic-programming",
+    "difficulty": "hard"
+  },
+  {
+    "slug": "regular-expression-matching",
+    "category": "2d-dynamic-programming",
+    "difficulty": "hard"
+  },
+
+  { "slug": "maximum-subarray", "category": "greedy", "difficulty": "medium" },
+  { "slug": "jump-game", "category": "greedy", "difficulty": "medium" },
+  { "slug": "jump-game-ii", "category": "greedy", "difficulty": "medium" },
+  { "slug": "gas-station", "category": "greedy", "difficulty": "medium" },
+  { "slug": "hand-of-straights", "category": "greedy", "difficulty": "medium" },
+  {
+    "slug": "merge-triplets-to-form-target-triplet",
+    "category": "greedy",
+    "difficulty": "medium"
+  },
+  { "slug": "partition-labels", "category": "greedy", "difficulty": "medium" },
+  {
+    "slug": "valid-parenthesis-string",
+    "category": "greedy",
+    "difficulty": "medium"
+  },
+
+  {
+    "slug": "insert-interval",
+    "category": "intervals",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "merge-intervals",
+    "category": "intervals",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "non-overlapping-intervals",
+    "category": "intervals",
+    "difficulty": "medium"
+  },
+  { "slug": "meeting-rooms", "category": "intervals", "difficulty": "easy" },
+  {
+    "slug": "meeting-rooms-ii",
+    "category": "intervals",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "minimum-interval-to-include-each-query",
+    "category": "intervals",
+    "difficulty": "hard"
+  },
+
+  {
+    "slug": "rotate-image",
+    "category": "math-geometry",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "spiral-matrix",
+    "category": "math-geometry",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "set-matrix-zeroes",
+    "category": "math-geometry",
+    "difficulty": "medium"
+  },
+  { "slug": "happy-number", "category": "math-geometry", "difficulty": "easy" },
+  { "slug": "plus-one", "category": "math-geometry", "difficulty": "easy" },
+  { "slug": "powx-n", "category": "math-geometry", "difficulty": "medium" },
+  {
+    "slug": "multiply-strings",
+    "category": "math-geometry",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "detect-squares",
+    "category": "math-geometry",
+    "difficulty": "medium"
+  },
+
+  {
+    "slug": "single-number",
+    "category": "bit-manipulation",
+    "difficulty": "easy"
+  },
+  {
+    "slug": "number-of-1-bits",
+    "category": "bit-manipulation",
+    "difficulty": "easy"
+  },
+  {
+    "slug": "counting-bits",
+    "category": "bit-manipulation",
+    "difficulty": "easy"
+  },
+  {
+    "slug": "reverse-bits",
+    "category": "bit-manipulation",
+    "difficulty": "easy"
+  },
+  {
+    "slug": "missing-number",
+    "category": "bit-manipulation",
+    "difficulty": "easy"
+  },
+  {
+    "slug": "sum-of-two-integers",
+    "category": "bit-manipulation",
+    "difficulty": "medium"
+  },
+  {
+    "slug": "reverse-integer",
+    "category": "bit-manipulation",
+    "difficulty": "medium"
+  }
 ]
